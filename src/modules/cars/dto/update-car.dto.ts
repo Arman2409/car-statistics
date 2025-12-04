@@ -1,4 +1,12 @@
-import { ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import {
+  MAKE_API,
+  MODEL_API,
+  YEAR_API,
+  PRICE_API,
+  LOCATION_API,
+} from '@/modules/cars/docs/create-car.docs';
+import { Type } from 'class-transformer';
 import {
   IsString,
   IsNumber,
@@ -6,51 +14,34 @@ import {
   Min,
   Max,
   IsOptional,
+  IsObject,
 } from 'class-validator';
+import { PriceDto } from './create-car.dto';
 
 export class UpdateCarDto {
-  @ApiPropertyOptional({
-    description: 'Normalized make of the car',
-    example: 'toyota',
-  })
+  @ApiPropertyOptional(MAKE_API)
   @IsString()
   @IsOptional()
   normalizedMake?: string;
 
-  @ApiPropertyOptional({
-    description: 'Normalized model of the car',
-    example: 'corolla',
-  })
+  @ApiPropertyOptional(MODEL_API)
   @IsString()
   @IsOptional()
   normalizedModel?: string;
 
-  @ApiPropertyOptional({
-    description: 'Year of the car',
-    example: 2020,
-    minimum: 1900,
-    maximum: 2100,
-  })
+  @ApiPropertyOptional(YEAR_API)
   @IsInt()
   @Min(1900)
   @Max(2100)
   @IsOptional()
   year?: number;
 
-  @ApiPropertyOptional({
-    description: 'Price of the car',
-    example: 25000.5,
-    minimum: 0,
-  })
-  @IsNumber({ maxDecimalPlaces: 2 })
-  @Min(0)
-  @IsOptional()
-  price?: number;
+    @ApiProperty(PRICE_API)
+    @IsObject()
+    @Type(() => PriceDto)
+    price: PriceDto;
 
-  @ApiPropertyOptional({
-    description: 'Location of the car',
-    example: 'New York, NY',
-  })
+  @ApiPropertyOptional(LOCATION_API)
   @IsString()
   @IsOptional()
   location?: string;

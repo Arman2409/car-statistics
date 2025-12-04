@@ -8,6 +8,8 @@ import { CarsModule } from '@/modules/cars/cars.module';
 import databaseConfig from '@/config/database.config';
 import { User } from '@/modules/users/entities/user.entity';
 import { Car } from '@/modules/cars/entities/car.entity';
+import { CacheModule } from '@nestjs/cache-manager';
+import * as redisStore from 'cache-manager-redis-store';
 
 @Module({
   imports: [
@@ -30,6 +32,30 @@ import { Car } from '@/modules/cars/entities/car.entity';
       }),
       inject: [ConfigService],
     }),
+    CacheModule.registerAsync({
+      isGlobal: true,
+      useFactory: async () => {
+        const url = process.env.REDIS_URL;
+        const host = process.env.REDIS_HOST || 'localhost';
+        const port = parseInt(process.env.REDIS_PORT as string, 10) || 6379;
+        const password = process.env.REDIS_PASSWORD;
+
+        // cache-manager expects TTL in seconds
+        const ttlSeconds = 90 * 24 * 60 * 60; // 90 days in seconds
+
+        return {
+          store: redisStore,
+          ...(url
+            ? { url }
+            : {
+                host,
+                port,
+                password,
+              }),
+          ttl: ttlSeconds,
+        };
+      },
+    }),
     AuthModule,
     UsersModule,
     CarsModule,
@@ -37,3 +63,4 @@ import { Car } from '@/modules/cars/entities/car.entity';
   controllers: [AppController],
 })
 export class AppModule {}
+

@@ -17,6 +17,30 @@ import {
   ApiResponse,
   ApiBearerAuth,
 } from '@nestjs/swagger';
+import {
+  CARS_TAG,
+  CREATE_OPERATION,
+  CREATE_RESPONSE,
+  BULK_CREATE_OPERATION,
+  BULK_CREATE_RESPONSE,
+  GET_ALL_OPERATION,
+  GET_ALL_RESPONSE,
+  GET_ONE_OPERATION,
+  GET_ONE_RESPONSE,
+  UPDATE_OPERATION,
+  UPDATE_RESPONSE,
+  DELETE_OPERATION,
+  DELETE_RESPONSE,
+  VALIDATION_ERROR,
+  UNAUTHORIZED,
+  NOT_FOUND,
+  AVERAGE_PRICE_PER_MODEL_OPERATION,
+  AVERAGE_PRICE_PER_MODEL_RESPONSE,
+  MAKE_PERCENTAGE_OPERATION,
+  MAKE_PERCENTAGE_RESPONSE,
+  MODEL_PERCENTAGE_OPERATION,
+  MODEL_PERCENTAGE_RESPONSE,
+} from '@/modules/cars/docs/cars.docs';
 import { CarsService } from '@/modules/cars/cars.service';
 import { CreateCarDto } from '@/modules/cars/dto/create-car.dto';
 import { UpdateCarDto } from '@/modules/cars/dto/update-car.dto';
@@ -24,7 +48,7 @@ import { BulkCreateCarDto } from '@/modules/cars/dto/bulk-create-car.dto';
 import { JwtAuthGuard } from '@/modules/auth/guards/jwt-auth.guard';
 import { Car } from '@/modules/cars/entities/car.entity';
 
-@ApiTags('Cars')
+@ApiTags(CARS_TAG)
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
 @Controller('cars')
@@ -32,66 +56,46 @@ export class CarsController {
   constructor(private readonly carsService: CarsService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Create a new car' })
-  @ApiResponse({
-    status: 201,
-    description: 'Car created successfully',
-    type: Car,
-  })
-  @ApiResponse({ status: 400, description: 'Validation error' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiOperation(CREATE_OPERATION)
+  @ApiResponse(CREATE_RESPONSE)
+  @ApiResponse(VALIDATION_ERROR)
+  @ApiResponse(UNAUTHORIZED)
   create(@Body() createCarDto: CreateCarDto): Promise<Car> {
     return this.carsService.create(createCarDto);
   }
 
   @Post('bulk')
-  @ApiOperation({ summary: 'Bulk create cars (for data ingestion)' })
-  @ApiResponse({
-    status: 201,
-    description: 'Cars created successfully',
-    type: [Car],
-  })
-  @ApiResponse({ status: 400, description: 'Validation error' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiOperation(BULK_CREATE_OPERATION)
+  @ApiResponse(BULK_CREATE_RESPONSE)
+  @ApiResponse(VALIDATION_ERROR)
+  @ApiResponse(UNAUTHORIZED)
   bulkCreate(@Body() bulkCreateCarDto: BulkCreateCarDto): Promise<Car[]> {
     return this.carsService.bulkCreate(bulkCreateCarDto.cars);
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get all cars' })
-  @ApiResponse({
-    status: 200,
-    description: 'List of all cars',
-    type: [Car],
-  })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiOperation(GET_ALL_OPERATION)
+  @ApiResponse(GET_ALL_RESPONSE)
+  @ApiResponse(UNAUTHORIZED)
   findAll(): Promise<Car[]> {
     return this.carsService.findAll();
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Get a car by ID' })
-  @ApiResponse({
-    status: 200,
-    description: 'Car found',
-    type: Car,
-  })
-  @ApiResponse({ status: 404, description: 'Car not found' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiOperation(GET_ONE_OPERATION)
+  @ApiResponse(GET_ONE_RESPONSE)
+  @ApiResponse(NOT_FOUND)
+  @ApiResponse(UNAUTHORIZED)
   findOne(@Param('id', ParseIntPipe) id: number): Promise<Car | null> {
     return this.carsService.findOne(id);
   }
 
   @Patch(':id')
-  @ApiOperation({ summary: 'Update a car' })
-  @ApiResponse({
-    status: 200,
-    description: 'Car updated successfully',
-    type: Car,
-  })
-  @ApiResponse({ status: 404, description: 'Car not found' })
-  @ApiResponse({ status: 400, description: 'Validation error' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiOperation(UPDATE_OPERATION)
+  @ApiResponse(UPDATE_RESPONSE)
+  @ApiResponse(NOT_FOUND)
+  @ApiResponse(VALIDATION_ERROR)
+  @ApiResponse(UNAUTHORIZED)
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateCarDto: UpdateCarDto,
@@ -101,76 +105,34 @@ export class CarsController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: 'Delete a car' })
-  @ApiResponse({ status: 204, description: 'Car deleted successfully' })
-  @ApiResponse({ status: 404, description: 'Car not found' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiOperation(DELETE_OPERATION)
+  @ApiResponse(DELETE_RESPONSE)
+  @ApiResponse(NOT_FOUND)
+  @ApiResponse(UNAUTHORIZED)
   remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
     return this.carsService.remove(id);
   }
 
   @Get('stats/average-price-per-model')
-  @ApiOperation({
-    summary: 'Get average price per model (grouped by make + model)',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Average price per model',
-    schema: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          make: { type: 'string', example: 'toyota' },
-          model: { type: 'string', example: 'corolla' },
-          averagePrice: { type: 'number', example: 12000 },
-        },
-      },
-    },
-  })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiOperation(AVERAGE_PRICE_PER_MODEL_OPERATION)
+  @ApiResponse(AVERAGE_PRICE_PER_MODEL_RESPONSE)
+  @ApiResponse(UNAUTHORIZED)
   getAveragePricePerModel() {
     return this.carsService.getAveragePricePerModel();
   }
 
   @Get('stats/make-percentage')
-  @ApiOperation({ summary: 'Get percentage distribution per make' })
-  @ApiResponse({
-    status: 200,
-    description: 'Percentage distribution per make',
-    schema: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          make: { type: 'string', example: 'toyota' },
-          percentage: { type: 'number', example: 25.5 },
-        },
-      },
-    },
-  })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiOperation(MAKE_PERCENTAGE_OPERATION)
+  @ApiResponse(MAKE_PERCENTAGE_RESPONSE)
+  @ApiResponse(UNAUTHORIZED)
   getMakePercentage() {
     return this.carsService.getMakePercentage();
   }
 
   @Get('stats/model-percentage')
-  @ApiOperation({ summary: 'Get percentage distribution per model' })
-  @ApiResponse({
-    status: 200,
-    description: 'Percentage distribution per model',
-    schema: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          model: { type: 'string', example: 'corolla' },
-          percentage: { type: 'number', example: 15.3 },
-        },
-      },
-    },
-  })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiOperation(MODEL_PERCENTAGE_OPERATION)
+  @ApiResponse(MODEL_PERCENTAGE_RESPONSE)
+  @ApiResponse(UNAUTHORIZED)
   getModelPercentage() {
     return this.carsService.getModelPercentage();
   }
