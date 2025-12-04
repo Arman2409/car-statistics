@@ -1,5 +1,12 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsNumber, IsInt, Min, Max, IsOptional } from 'class-validator';
+import {
+  IsString,
+  IsNumber,
+  IsInt,
+  Min,
+  Max,
+  IsOptional,
+} from 'class-validator';
 
 export class UpdateCarDto {
   @ApiPropertyOptional({
@@ -32,7 +39,7 @@ export class UpdateCarDto {
 
   @ApiPropertyOptional({
     description: 'Price of the car',
-    example: 25000.50,
+    example: 25000.5,
     minimum: 0,
   })
   @IsNumber({ maxDecimalPlaces: 2 })
@@ -48,4 +55,3 @@ export class UpdateCarDto {
   @IsOptional()
   location?: string;
 }
-

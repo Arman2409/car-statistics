@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsArray, ValidateNested, ArrayMinSize } from 'class-validator';
 import { Type } from 'class-transformer';
-import { CreateCarDto } from './create-car.dto';
+import { CreateCarDto } from '@/modules/cars/dto/create-car.dto';
 
 export class BulkCreateCarDto {
   @ApiProperty({
@@ -14,4 +14,3 @@ export class BulkCreateCarDto {
   @Type(() => CreateCarDto)
   cars: CreateCarDto[];
 }
-

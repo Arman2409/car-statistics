@@ -1,11 +1,13 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, ValidationPipe } from '@nestjs/common';
-import * as request from 'supertest';
-import { AppModule } from '../src/app.module';
-import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { User } from '../src/modules/users/entities/user.entity';
+import { Test } from '@nestjs/testing';
+import { ValidationPipe } from '@nestjs/common';
+import request from 'supertest';
 import * as bcrypt from 'bcrypt';
+import { AppModule } from '@/app.module';
+import { getRepositoryToken } from '@nestjs/typeorm';
+import { User } from '@/modules/users/entities/user.entity';
+import type { TestingModule } from '@nestjs/testing';
+import type { INestApplication } from '@nestjs/common';
+import type { Repository } from 'typeorm';
 
 describe('Auth (e2e)', () => {
   let app: INestApplication;
@@ -81,4 +83,3 @@ describe('Auth (e2e)', () => {
     });
   });
 });
-

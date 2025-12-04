@@ -1,29 +1,6 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Car Statistics Backend API
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
-
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
-
-## Description
-
-Car Statistics Backend API - A NestJS backend service for managing car data, processing high-volume car data ingestion, and providing statistics endpoints.
+A NestJS backend service for managing car data, processing high-volume car data ingestion, and providing statistics endpoints.
 
 ## Features
 
@@ -38,6 +15,18 @@ Car Statistics Backend API - A NestJS backend service for managing car data, pro
 - ✅ Input validation using class-validator and class-transformer
 - ✅ PostgreSQL database with TypeORM
 - ✅ Comprehensive unit and E2E tests
+- ✅ Absolute imports with `@/` prefix
+- ✅ Type-safe imports with `import type` for type-only imports
+
+## Tech Stack
+
+- **Framework:** NestJS
+- **Language:** TypeScript
+- **Database:** PostgreSQL with TypeORM
+- **Authentication:** JWT (Passport)
+- **Validation:** class-validator, class-transformer
+- **Documentation:** Swagger/OpenAPI
+- **Testing:** Jest
 
 ## Prerequisites
 
@@ -50,22 +39,36 @@ Car Statistics Backend API - A NestJS backend service for managing car data, pro
 ### 1. Install Dependencies
 
 ```bash
-$ pnpm install
+pnpm install
 ```
 
 ### 2. Database Setup
 
-Create a PostgreSQL database:
+Create a PostgreSQL database using one of the following methods:
 
+**Option 1: Using `createdb` command (PostgreSQL utility)**
 ```bash
-$ createdb car_statistics
+createdb car_statistics
+```
+*Note: `createdb` is a PostgreSQL command-line utility that comes with PostgreSQL installation. It's not an npm package.*
+
+**Option 2: Using `psql` command-line client**
+```bash
+psql -U postgres -c "CREATE DATABASE car_statistics;"
 ```
 
-Or using psql:
-
+**Option 3: Using `psql` interactive mode**
+```bash
+psql -U postgres
+```
+Then run:
 ```sql
 CREATE DATABASE car_statistics;
+\q
 ```
+
+**Option 4: Using a database GUI tool**
+Use tools like pgAdmin, DBeaver, or TablePlus to create the database.
 
 ### 3. Environment Configuration
 
@@ -100,10 +103,10 @@ You can create a user using the seed script:
 
 ```bash
 # Create a user with default credentials (admin/admin123)
-$ pnpm run seed:user
+pnpm run seed:user
 
 # Or specify custom username and password
-$ pnpm run seed:user myusername mypassword
+pnpm run seed:user myusername mypassword
 ```
 
 Alternatively, you can create a user directly in the database (password must be hashed using bcrypt) or use the Swagger UI after starting the server.
@@ -114,23 +117,23 @@ Alternatively, you can create a user directly in the database (password must be 
 
 ```bash
 # watch mode (recommended for development)
-$ pnpm run start:dev
+pnpm run start:dev
 
 # standard start
-$ pnpm run start
+pnpm run start
 ```
 
-The application will be available at `http://localhost:3000`
+The application will be available at `http://localhost:3000`  
 Swagger documentation will be available at `http://localhost:3000/api/docs`
 
 ### Production Mode
 
 ```bash
 # build the application
-$ pnpm run build
+pnpm run build
 
 # run in production mode
-$ pnpm run start:prod
+pnpm run start:prod
 ```
 
 ## API Endpoints
@@ -217,20 +220,20 @@ To integrate with the AMA-task-data-seeder project:
 
 ```bash
 # run unit tests
-$ pnpm run test
+pnpm run test
 
 # run tests in watch mode
-$ pnpm run test:watch
+pnpm run test:watch
 
 # run tests with coverage
-$ pnpm run test:cov
+pnpm run test:cov
 ```
 
 ### E2E Tests
 
 ```bash
 # run e2e tests
-$ pnpm run test:e2e
+pnpm run test:e2e
 ```
 
 **Note:** E2E tests require a running PostgreSQL database. Make sure your `.env` file is configured correctly.
@@ -239,26 +242,41 @@ $ pnpm run test:e2e
 
 ```
 src/
-├── auth/              # Authentication module
-│   ├── dto/          # Data Transfer Objects
-│   ├── auth.service.ts
-│   ├── auth.controller.ts
-│   ├── jwt.strategy.ts
-│   └── jwt-auth.guard.ts
-├── users/            # Users module
-│   ├── entities/     # User entity
-│   └── users.service.ts
-├── cars/             # Cars module
-│   ├── dto/          # Car DTOs
-│   ├── entities/     # Car entity
-│   ├── cars.service.ts
-│   └── cars.controller.ts
-├── config/           # Configuration files
+├── modules/              # Feature modules
+│   ├── auth/             # Authentication module
+│   │   ├── dto/          # Data Transfer Objects
+│   │   ├── guards/       # JWT guards
+│   │   ├── strategies/   # Passport strategies
+│   │   ├── auth.service.ts
+│   │   ├── auth.controller.ts
+│   │   └── auth.module.ts
+│   ├── users/            # Users module
+│   │   ├── entities/     # User entity
+│   │   ├── users.service.ts
+│   │   └── users.module.ts
+│   └── cars/             # Cars module
+│       ├── dto/          # Car DTOs
+│       ├── entities/     # Car entity
+│       ├── cars.service.ts
+│       ├── cars.controller.ts
+│       └── cars.module.ts
+├── config/               # Configuration files
 │   ├── database.config.ts
 │   └── jwt.config.ts
-├── app.module.ts     # Root module
-└── main.ts           # Application entry point
+├── constants/            # Application constants
+│   └── settings/        # Settings and configurations
+├── scripts/             # Utility scripts
+│   └── seed-user.ts     # User seeding script
+├── app.module.ts         # Root module
+└── main.ts               # Application entry point
 ```
+
+## Code Style
+
+- **Absolute Imports:** All imports use the `@/` prefix (e.g., `@/modules/auth/auth.service`)
+- **Type Imports:** Type-only imports use `import type` and are placed at the end of import statements
+- **Module Organization:** Features are organized in the `modules/` directory
+- **Guards & Strategies:** Authentication guards and strategies are in separate folders
 
 ## Swagger Documentation
 
@@ -315,44 +333,4 @@ Example validation errors:
 
 ## License
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
-
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
-$ pnpm install -g @nestjs/mau
-$ mau deploy
-```
-
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+MIT

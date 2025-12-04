@@ -1,9 +1,10 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
 import { JwtService } from '@nestjs/jwt';
 import { UnauthorizedException } from '@nestjs/common';
-import { AuthService } from './auth.service';
-import { UsersService } from '../users/users.service';
-import { LoginDto } from './dto/login.dto';
+import { AuthService } from '@/modules/auth/auth.service';
+import { UsersService } from '@/modules/users/users.service';
+import type { TestingModule } from '@nestjs/testing';
+import type { LoginDto } from '@/modules/auth/dto/login.dto';
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -81,4 +82,3 @@ describe('AuthService', () => {
     });
   });
 });
-

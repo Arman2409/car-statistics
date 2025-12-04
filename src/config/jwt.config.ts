@@ -6,4 +6,3 @@ export default registerAs('jwt', () => ({
     expiresIn: process.env.JWT_EXPIRES_IN || '1d',
   },
 }));
-

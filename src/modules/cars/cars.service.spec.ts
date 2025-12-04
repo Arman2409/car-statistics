@@ -1,9 +1,10 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { CarsService } from './cars.service';
-import { Car } from './entities/car.entity';
-import { CreateCarDto } from './dto/create-car.dto';
+import { CarsService } from '@/modules/cars/cars.service';
+import { CreateCarDto } from '@/modules/cars/dto/create-car.dto';
+import type { TestingModule } from '@nestjs/testing';
+import type { Repository } from 'typeorm';
+import type { Car } from '@/modules/cars/entities/car.entity';
 
 describe('CarsService', () => {
   let service: CarsService;
@@ -103,4 +104,3 @@ describe('CarsService', () => {
     });
   });
 });
-

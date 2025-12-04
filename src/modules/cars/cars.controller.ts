@@ -17,12 +17,12 @@ import {
   ApiResponse,
   ApiBearerAuth,
 } from '@nestjs/swagger';
-import { CarsService } from './cars.service';
-import { CreateCarDto } from './dto/create-car.dto';
-import { UpdateCarDto } from './dto/update-car.dto';
-import { BulkCreateCarDto } from './dto/bulk-create-car.dto';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { Car } from './entities/car.entity';
+import { CarsService } from '@/modules/cars/cars.service';
+import { CreateCarDto } from '@/modules/cars/dto/create-car.dto';
+import { UpdateCarDto } from '@/modules/cars/dto/update-car.dto';
+import { BulkCreateCarDto } from '@/modules/cars/dto/bulk-create-car.dto';
+import { JwtAuthGuard } from '@/modules/auth/guards/jwt-auth.guard';
+import { Car } from '@/modules/cars/entities/car.entity';
 
 @ApiTags('Cars')
 @ApiBearerAuth()
@@ -78,7 +78,7 @@ export class CarsController {
   })
   @ApiResponse({ status: 404, description: 'Car not found' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  findOne(@Param('id', ParseIntPipe) id: number): Promise<Car|null> {
+  findOne(@Param('id', ParseIntPipe) id: number): Promise<Car | null> {
     return this.carsService.findOne(id);
   }
 
@@ -175,4 +175,3 @@ export class CarsController {
     return this.carsService.getModelPercentage();
   }
 }
-

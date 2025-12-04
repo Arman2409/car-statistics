@@ -34,4 +34,3 @@ export class Car {
   @UpdateDateColumn()
   updatedAt: Date;
 }
-

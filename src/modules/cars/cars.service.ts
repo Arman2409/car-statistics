@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Car } from './entities/car.entity';
-import { CreateCarDto } from './dto/create-car.dto';
-import { UpdateCarDto } from './dto/update-car.dto';
+import { Car } from '@/modules/cars/entities/car.entity';
+import { CreateCarDto } from '@/modules/cars/dto/create-car.dto';
+import { UpdateCarDto } from '@/modules/cars/dto/update-car.dto';
+import type { Repository } from 'typeorm';
 
 @Injectable()
 export class CarsService {
@@ -106,4 +106,3 @@ export class CarsService {
     }));
   }
 }
-

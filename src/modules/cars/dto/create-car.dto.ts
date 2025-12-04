@@ -38,7 +38,7 @@ export class CreateCarDto {
 
   @ApiProperty({
     description: 'Price of the car',
-    example: 25000.50,
+    example: 25000.5,
     minimum: 0,
   })
   @IsNumber({ maxDecimalPlaces: 2 })
@@ -53,4 +53,3 @@ export class CreateCarDto {
   @IsNotEmpty()
   location: string;
 }
-
