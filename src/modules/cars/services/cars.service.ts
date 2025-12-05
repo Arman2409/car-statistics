@@ -4,36 +4,48 @@ import { Car } from '@/modules/cars/entities/car.entity';
 import { CreateCarDto } from '@/modules/cars/dto/create-car.dto';
 import { UpdateCarDto } from '@/modules/cars/dto/update-car.dto';
 import type { Repository } from 'typeorm';
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import { Cache } from 'cache-manager';
-import { MAKES_CACHE_KEY } from './make-seeder.service';
+import { MAKES_CACHE_KEY, MODELS_CACHE_KEY } from './make-seeder.service';
+import { RedisService } from '@/modules/redis/redis.service';
 
 @Injectable()
 export class CarsService {
   constructor(
     @InjectRepository(Car)
     private carsRepository: Repository<Car>,
-    @Inject(CACHE_MANAGER) private cacheManager: Cache
+    private readonly redisService: RedisService,
   ) {}
 
-  private async validateAmdNormalizeMake(make: string, isUpdate = false): Promise<string> {
-    if (!make && !isUpdate) throw new BadRequestException('Make is required');
+  private async validateMakeAndModel(make?: string | undefined, model?: string, isUpdate = false): Promise<{ normalizedMake?: string; normalizedModel?: string }> {
+    if (!isUpdate && (!make || !model)) throw new BadRequestException('Make and model are required');
 
-    const cachedMakes = await this.cacheManager.get<string[]>(MAKES_CACHE_KEY);
-    
-    if (!cachedMakes || !cachedMakes.includes(make.toLowerCase())) {
+    const cachedMakes = await this.redisService.getClient().get(MAKES_CACHE_KEY);
+    const cachedModels = await this.redisService.getClient().get(MODELS_CACHE_KEY);
+
+    if (make && !cachedMakes?.includes(make.toLowerCase())) {
       throw new BadRequestException(`Invalid car make: ${make}`);
     }
 
-    return make.charAt(0).toUpperCase() + make.slice(1).toLowerCase();
+    if(model && !cachedModels?.includes(model.toLowerCase())) {
+      throw new BadRequestException(`Invalid car model: ${model}`);
+    }
+
+    return { 
+      ...(make ? { normalizedMake: this.normalizeString(make) } : undefined),
+      ...(model ? { normalizedModel: this.normalizeString(model) } : undefined)
+     };
   }
 
-  async create(createCarDto: CreateCarDto): Promise<Car> {
-    const normalizedMake = await this.validateAmdNormalizeMake(createCarDto.make);
+  private normalizeString(value: string): string {
+    return value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
+  }
+
+  async create({make, model, ...createPayload}: CreateCarDto): Promise<Car> {
+    const { normalizedMake, normalizedModel } = await this.validateMakeAndModel(make, model);
 
     const car = this.carsRepository.create({
-      ...createCarDto,
+      ...createPayload,
       normalizedMake,
+      normalizedModel,
     });
     
     return this.carsRepository.save(car);
@@ -54,12 +66,15 @@ export class CarsService {
     return this.carsRepository.findOne({ where: { id } });
   }
 
-  async update(id: number, updateCarDto: UpdateCarDto): Promise<Partial<Car>> {
-    const normalizedMake = await this.validateAmdNormalizeMake(updateCarDto.make as string, true);
+  async update(id: number, {make, model, ...updatePayload}: UpdateCarDto): Promise<Partial<Car>> {
+    const { normalizedMake, normalizedModel } = await this.validateMakeAndModel(make, model, true);
+
     const updateResult = await this.carsRepository.update(id, {
-      ...updateCarDto,
+      ...updatePayload,
       normalizedMake,
+      normalizedModel,
     });
+
     return updateResult as Partial<Car>;
   }
 

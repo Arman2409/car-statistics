@@ -8,7 +8,7 @@ import { UsersService } from '@/modules/users/users.service';
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(
     private usersService: UsersService,
-    private configService: ConfigService,
+    configService: ConfigService,
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
@@ -19,7 +19,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  async validate(payload: any) {
+  async validate(payload: { sub: number; username: string }) {
     const user = await this.usersService.findByUsername(payload.username);
     if (!user) {
       throw new UnauthorizedException();
