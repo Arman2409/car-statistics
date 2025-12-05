@@ -5,7 +5,8 @@ import { AppModule } from '@/app.module';
 import {
   SWAGGER_SETTINGS,
   GLOBAL_VALIDATION_SETTINGS,
-} from '@/constants/settings/main';
+  SwaggerSetupDetails,
+} from '@/constants/settings';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -15,9 +16,9 @@ async function bootstrap() {
 
   // Swagger configuration
   const config = new DocumentBuilder()
-    .setTitle('Car Statistics API')
-    .setDescription('Backend API for managing car data and statistics')
-    .setVersion('1.0')
+    .setTitle(SwaggerSetupDetails.TITLE)
+    .setDescription(SwaggerSetupDetails.DESCRIPTION)
+    .setVersion(SwaggerSetupDetails.VERSION)
     .addBearerAuth(SWAGGER_SETTINGS, 'JWT-auth')
     .build();
 
@@ -27,7 +28,7 @@ async function bootstrap() {
   const port = process.env.PORT || 3000;
   await app.listen(port);
 
-  const logger = new Logger();
+  const logger = new Logger('Bootstrap');
 
   logger.log(
     `Application is running on: ${process.env.NODE_ENV === 'development' ? `${process.env.DEV_HOSTNAME}:` : 'Port '}${port}`,

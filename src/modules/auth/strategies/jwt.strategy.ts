@@ -3,6 +3,7 @@ import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
 import { UsersService } from '@/modules/users/users.service';
+import type { ValidateArgs } from '@/modules/auth/types/ValidateArgs';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -19,7 +20,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  async validate(payload: { sub: number; username: string }) {
+  // TODO: Something is wrong here, needs checking
+  async validate(payload: ValidateArgs) {
     const user = await this.usersService.findByUsername(payload.username);
     if (!user) {
       throw new UnauthorizedException();

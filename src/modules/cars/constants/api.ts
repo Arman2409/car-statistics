@@ -1,0 +1,1 @@
+export const APIARY_API_URL = "https://private-anon-a64d73744d-carsapi1.apiary-mock.com/cars";

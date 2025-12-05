@@ -44,9 +44,9 @@ import {
 import { CarsService } from '@/modules/cars/services/cars.service';
 import { CreateCarDto } from '@/modules/cars/dto/create-car.dto';
 import { UpdateCarDto } from '@/modules/cars/dto/update-car.dto';
-import { BulkCreateCarDto } from '@/modules/cars/dto/bulk-create-car.dto';
 import { JwtAuthGuard } from '@/modules/auth/guards/jwt-auth.guard';
 import { Car } from '@/modules/cars/entities/car.entity';
+import { BulkCreateResponse } from '@/modules/cars/types/BulkCreateResponse';
 
 @ApiTags(CARS_TAG)
 @ApiBearerAuth()
@@ -69,8 +69,8 @@ export class CarsController {
   @ApiResponse(BULK_CREATE_RESPONSE)
   @ApiResponse(VALIDATION_ERROR)
   @ApiResponse(UNAUTHORIZED)
-  bulkCreate(@Body() bulkCreateCarDto: BulkCreateCarDto): Promise<Car[]> {
-    return this.carsService.bulkCreate(bulkCreateCarDto.cars);
+  bulkCreate(@Body() cars: CreateCarDto[]): Promise<BulkCreateResponse> {
+    return this.carsService.bulkCreate(cars);
   }
 
   @Get()

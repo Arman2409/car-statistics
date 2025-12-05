@@ -1,11 +1,14 @@
-import { BadRequestException, Inject, Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Car } from '@/modules/cars/entities/car.entity';
-import { CreateCarDto } from '@/modules/cars/dto/create-car.dto';
-import { UpdateCarDto } from '@/modules/cars/dto/update-car.dto';
 import { RedisService } from '@/services/redis.service';
-import type { Repository } from 'typeorm';
 import { validateMakeAndModel } from '@/modules/cars/services/utils/validate-make-model';
+import type { BulkCreateResponse } from '@/modules/cars/types/BulkCreateResponse';
+import type { Repository } from 'typeorm';
+import type { CreateCarDto } from '@/modules/cars/dto/create-car.dto';
+import type { UpdateCarDto } from '@/modules/cars/dto/update-car.dto';
+import type { GetPercentageResponse } from '@/modules/cars/types/GetPercentageResponse';
+import type { GetAveragePricePerModelResponse } from '@/modules/cars/types/GetAveragePricePerModelResponse';
 
 @Injectable()
 export class CarsService {
@@ -17,7 +20,12 @@ export class CarsService {
   ) {}
 
   async create({make, model, ...createPayload}: CreateCarDto): Promise<Car> {
-    const { normalizedMake, normalizedModel } = await validateMakeAndModel(this.redisService, this.logger, make, model);
+    const { normalizedMake, normalizedModel } = await validateMakeAndModel({
+      redisService: this.redisService,
+      logger: this.logger,
+      make,
+      model,
+    });
 
     const car = this.carsRepository.create({
       ...createPayload,
@@ -28,10 +36,49 @@ export class CarsService {
     return this.carsRepository.save(car);
   }
 
-  async bulkCreate(cars: CreateCarDto[]): Promise<Car[]> {
-    // TODO: This one doesn't have validation 
-    const carEntities = this.carsRepository.create(cars);
-    return this.carsRepository.save(carEntities);
+  async bulkCreate(cars: any[]): Promise<BulkCreateResponse> {
+    console.log("here 1")
+
+    const carsToCreate: Partial<Car>[] = [];
+    const errorMessages: {
+      index: number;
+      message: string;
+    }[] = [];
+
+    for(let i = 0; i < cars.length; i++) {
+      const { make, model, ...createPayload } = cars[i];
+
+      let normalizedMake: string | undefined;
+      let normalizedModel: string | undefined;
+      try{
+        const result = await validateMakeAndModel({redisService: this.redisService, logger: this.logger, make, model});
+        normalizedMake = result.normalizedMake;
+        normalizedModel = result.normalizedModel;
+      } catch(err){
+        errorMessages.push({
+          index: i,
+          message: (err as Error).message,
+        });
+        
+        continue;
+      }
+
+       carsToCreate.push({
+        ...createPayload,
+        normalizedMake: normalizedMake as string,
+        normalizedModel: normalizedModel as string,
+      });
+    }
+
+    const carEntities = this.carsRepository.create(carsToCreate);
+
+    const createResult = await this.carsRepository.save(carEntities);
+
+    return {
+      created: createResult.length,
+      failed: errorMessages.length,
+      errors: errorMessages,
+    }
   }
 
   async findAll(): Promise<Car[]> {
@@ -44,17 +91,40 @@ export class CarsService {
     return this.carsRepository.findOne({ where: { id } });
   }
 
-  async update(id: number, {make, model, ...updatePayload}: UpdateCarDto): Promise<Partial<Car>> {
-    const { normalizedMake, normalizedModel } = await validateMakeAndModel(this.redisService,  this.logger, make, model, true);
+   async update(id: number, updatePayload: UpdateCarDto): Promise<Partial<Car>> {
+    const { make, model, ...restOfPayload } = updatePayload;
 
-    const updateResult = await this.carsRepository.update(id, {
-      ...updatePayload,
+    // Perform validation and normalization using the extracted raw fields
+    const { normalizedMake, normalizedModel } = await validateMakeAndModel(
+      {
+        redisService: this.redisService,
+        logger: this.logger,
+        make,
+        model,
+        isUpdate: true,
+      }
+    );
+
+    const updateData = {
+      ...restOfPayload,
       normalizedMake,
       normalizedModel,
-    });
+    };
 
-    // TODO the type is wrong here, it doesn't return the updated record
-    return updateResult as Partial<Car>;
+    // 4. Perform the update operation
+    const updateResult = await this.carsRepository.update(id, updateData);
+
+    if (updateResult.affected === 0) {
+      throw new BadRequestException(`Car with ID ${id} not found`);
+    }
+
+    const updatedFields = {
+      ...restOfPayload,
+      ...(normalizedMake ? {normalizedMake} : {}),
+      ...(normalizedModel ? {normalizedModel} : {}),
+    }
+
+    return updatedFields;
   }
 
   async remove(id: number): Promise<void> {
@@ -68,9 +138,7 @@ export class CarsService {
     return;
   }
 
-  async getAveragePricePerModel(): Promise<
-    Array<{ make: string; model: string; averagePrice: number }>
-  > {
+  async getAveragePricePerModel(): Promise<GetAveragePricePerModelResponse> {
     const result = await this.carsRepository
       .createQueryBuilder('car')
       .select('car.normalizedMake', 'make')
@@ -89,9 +157,7 @@ export class CarsService {
     }));
   }
 
-  async getMakePercentage(): Promise<
-    Array<{ make: string; percentage: number }>
-  > {
+  async getMakePercentage(): Promise<GetPercentageResponse> {
     const total = await this.carsRepository.count();
     if (total === 0) {
       return [];
@@ -111,9 +177,7 @@ export class CarsService {
     }));
   }
 
-  async getModelPercentage(): Promise<
-    Array<{ model: string; percentage: number }>
-  > {
+  async getModelPercentage(): Promise<GetPercentageResponse> {
     const total = await this.carsRepository.count();
     if (total === 0) {
       return [];
