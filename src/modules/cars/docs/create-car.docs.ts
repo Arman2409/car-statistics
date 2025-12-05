@@ -1,14 +1,3 @@
-export const PRICE_AMOUNT_API = {
-  description: 'Amount of the price',
-  example: 25000.5,
-  minimum: 0,
-};
-
-export const PRICE_CURRENCY_API = {
-  description: 'Currency of the price',
-  example: 'USD',
-};
-
 export const MAKE_API = {
   description: 'Normalized make of the car',
   example: 'toyota',

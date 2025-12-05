@@ -8,7 +8,7 @@ import { CarsModule } from '@/modules/cars/cars.module';
 import databaseConfig from '@/config/database.config';
 import { User } from '@/modules/users/entities/user.entity';
 import { Car } from '@/modules/cars/entities/car.entity';
-import { RedisModule } from './modules/redis/redis.module';
+import { RedisService } from '@/services/redis.service';
 
 @Module({
   imports: [
@@ -31,12 +31,12 @@ import { RedisModule } from './modules/redis/redis.module';
       }),
       inject: [ConfigService],
     }),
-    RedisModule,
     AuthModule,
     UsersModule,
     CarsModule,
   ],
   controllers: [AppController],
+  providers: [RedisService],
 })
 export class AppModule {}
 

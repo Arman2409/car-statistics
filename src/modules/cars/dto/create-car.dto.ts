@@ -1,40 +1,19 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
-  PRICE_AMOUNT_API,
-  PRICE_CURRENCY_API,
   MAKE_API,
   MODEL_API,
   YEAR_API,
   PRICE_API,
   LOCATION_API,
 } from '@/modules/cars/docs/create-car.docs';
-import { Type } from 'class-transformer';
-import cc from 'currency-codes';
 import {
   IsString,
   IsNotEmpty,
-  IsNumber,
   IsInt,
   Min,
   Max,
-  IsObject,
-  ValidateNested,
-  IsIn,
 } from 'class-validator';
-
-export class PriceDto {
-  @ApiProperty(PRICE_AMOUNT_API)
-  @IsNumber()
-  @Min(0)
-  amount: number;
-
-  @ApiProperty(PRICE_CURRENCY_API)
-  @IsString()
-  @IsNotEmpty()
-  @IsIn(cc.codes())
-  currency: string;
-}
-
+ 
 export class CreateCarDto {
   @ApiProperty(MAKE_API)
   @IsString()
@@ -53,11 +32,9 @@ export class CreateCarDto {
   year: number;
 
   @ApiProperty(PRICE_API)
-  @IsObject()
   @IsNotEmpty()
-  @ValidateNested()
-  @Type(() => PriceDto)
-  price: PriceDto;
+  @IsInt()
+  price: number;
 
   @ApiProperty(LOCATION_API)
   @IsString()

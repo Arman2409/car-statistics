@@ -1,11 +1,11 @@
-import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Car } from '@/modules/cars/entities/car.entity';
 import { CreateCarDto } from '@/modules/cars/dto/create-car.dto';
 import { UpdateCarDto } from '@/modules/cars/dto/update-car.dto';
+import { RedisService } from '@/services/redis.service';
 import type { Repository } from 'typeorm';
-import { MAKES_CACHE_KEY, MODELS_CACHE_KEY } from './make-seeder.service';
-import { RedisService } from '@/modules/redis/redis.service';
+import { validateMakeAndModel } from '@/modules/cars/services/utils/validate-make-model';
 
 @Injectable()
 export class CarsService {
@@ -13,34 +13,11 @@ export class CarsService {
     @InjectRepository(Car)
     private carsRepository: Repository<Car>,
     private readonly redisService: RedisService,
+    private readonly logger: Logger,
   ) {}
 
-  private async validateMakeAndModel(make?: string | undefined, model?: string, isUpdate = false): Promise<{ normalizedMake?: string; normalizedModel?: string }> {
-    if (!isUpdate && (!make || !model)) throw new BadRequestException('Make and model are required');
-
-    const cachedMakes = await this.redisService.getClient().get(MAKES_CACHE_KEY);
-    const cachedModels = await this.redisService.getClient().get(MODELS_CACHE_KEY);
-
-    if (make && !cachedMakes?.includes(make.toLowerCase())) {
-      throw new BadRequestException(`Invalid car make: ${make}`);
-    }
-
-    if(model && !cachedModels?.includes(model.toLowerCase())) {
-      throw new BadRequestException(`Invalid car model: ${model}`);
-    }
-
-    return { 
-      ...(make ? { normalizedMake: this.normalizeString(make) } : undefined),
-      ...(model ? { normalizedModel: this.normalizeString(model) } : undefined)
-     };
-  }
-
-  private normalizeString(value: string): string {
-    return value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
-  }
-
   async create({make, model, ...createPayload}: CreateCarDto): Promise<Car> {
-    const { normalizedMake, normalizedModel } = await this.validateMakeAndModel(make, model);
+    const { normalizedMake, normalizedModel } = await validateMakeAndModel(this.redisService, this.logger, make, model);
 
     const car = this.carsRepository.create({
       ...createPayload,
@@ -52,6 +29,7 @@ export class CarsService {
   }
 
   async bulkCreate(cars: CreateCarDto[]): Promise<Car[]> {
+    // TODO: This one doesn't have validation 
     const carEntities = this.carsRepository.create(cars);
     return this.carsRepository.save(carEntities);
   }
@@ -67,7 +45,7 @@ export class CarsService {
   }
 
   async update(id: number, {make, model, ...updatePayload}: UpdateCarDto): Promise<Partial<Car>> {
-    const { normalizedMake, normalizedModel } = await this.validateMakeAndModel(make, model, true);
+    const { normalizedMake, normalizedModel } = await validateMakeAndModel(this.redisService,  this.logger, make, model, true);
 
     const updateResult = await this.carsRepository.update(id, {
       ...updatePayload,
@@ -75,11 +53,19 @@ export class CarsService {
       normalizedModel,
     });
 
+    // TODO the type is wrong here, it doesn't return the updated record
     return updateResult as Partial<Car>;
   }
 
   async remove(id: number): Promise<void> {
-    await this.carsRepository.delete(id);
+    const deleteResult = await this.carsRepository.delete(id);
+
+    // If no record was affected, means the car with the given ID does not exist
+    if (deleteResult.affected === 0) {
+      throw new BadRequestException(`Car with ID ${id} not found`);
+    }
+
+    return;
   }
 
   async getAveragePricePerModel(): Promise<

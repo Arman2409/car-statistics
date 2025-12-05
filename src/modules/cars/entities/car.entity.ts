@@ -6,7 +6,6 @@ import {
   UpdateDateColumn,
   Index,
 } from 'typeorm';
-import { PriceDto } from '../dto/create-car.dto';
 
 @Entity('cars')
 @Index(['normalizedMake', 'normalizedModel'])
@@ -23,8 +22,8 @@ export class Car {
   @Column()
   year: number;
 
-  @Column('json')
-  price: PriceDto;
+  @Column()
+  price: number;
 
   @Column()
   location: string;

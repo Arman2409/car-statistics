@@ -109,7 +109,7 @@ export class CarsController {
   @ApiResponse(DELETE_RESPONSE)
   @ApiResponse(NOT_FOUND)
   @ApiResponse(UNAUTHORIZED)
-  remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
+  async remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
     return this.carsService.remove(id);
   }
 

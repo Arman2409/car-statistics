@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs'; // Helper for NestJS HttpService
-import { RedisService } from '@/modules/redis/redis.service';
+import { RedisService } from '@/services/redis.service';
 
 export const MAKES_CACHE_KEY = 'valid_car_makes';
 export const MODELS_CACHE_KEY = 'valid_car_models';
