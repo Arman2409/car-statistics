@@ -10,12 +10,11 @@ import { firstValueFrom } from 'rxjs'; // Helper for NestJS HttpService
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
 
+export const MAKES_CACHE_KEY = 'valid_car_makes'; 
+
 @Injectable()
 export class MakeSeederService implements OnModuleInit {
   private readonly logger = new Logger(MakeSeederService.name);
-  
-  // Use a constant key for your cache item
-  public readonly CACHE_KEY = 'valid_car_makes'; 
 
   // REPLACE THIS with the actual URL for the 40 makes you found
   private readonly API_URL = "https://private-anon-a64d73744d-carsapi1.apiary-mock.com/cars";
@@ -37,7 +36,7 @@ export class MakeSeederService implements OnModuleInit {
 
   public async seedMakesIfEmpty(): Promise<void> {
     // 1. Idempotency Check: Don't fetch if already in Redis
-    const cachedMakes = await this.cacheManager.get(this.CACHE_KEY);
+    const cachedMakes = await this.cacheManager.get(MAKES_CACHE_KEY);
     console.log("cachedMakes",cachedMakes);
     if (cachedMakes) {
       this.logger.log(`Car makes already cached.`);
@@ -59,6 +58,7 @@ export class MakeSeederService implements OnModuleInit {
       makesToCache = response.data
         .map(item => item?.make) 
         .filter(name => name?.length > 0);
+        console.log("makesToCache",makesToCache[0], makesToCache[1], makesToCache.length);
 
       this.logger.log(`Successfully fetched ${makesToCache.length} car makes from external API.`);
 
@@ -72,7 +72,7 @@ export class MakeSeederService implements OnModuleInit {
 
     // 4. Cache the result in Redis with a long TTL (e.g., 90 days = 7776000 seconds)
     // This is the caching step that makes your app self-sufficient after the first run
-    await this.cacheManager.set(this.CACHE_KEY, makesToCache).then(res => {
+    await this.cacheManager.set(MAKES_CACHE_KEY, makesToCache).then(res => {
       console.log("res",res);
     });
     this.logger.log(`Car makes list successfully stored in Redis.`);

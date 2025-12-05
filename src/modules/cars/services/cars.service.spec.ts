@@ -1,6 +1,6 @@
 import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { CarsService } from '@/modules/cars/cars.service';
+import { CarsService } from '@/modules/cars/services/cars.service';
 import { CreateCarDto } from '@/modules/cars/dto/create-car.dto';
 import type { TestingModule } from '@nestjs/testing';
 import type { Repository } from 'typeorm';

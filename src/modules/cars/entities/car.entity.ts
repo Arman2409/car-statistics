@@ -9,16 +9,16 @@ import {
 import { PriceDto } from '../dto/create-car.dto';
 
 @Entity('cars')
-@Index(['make', 'model'])
+@Index(['normalizedMake', 'normalizedModel'])
 export class Car {
   @PrimaryGeneratedColumn()
   id: number;
 
   @Column()
-  make: string;
+  normalizedMake: string;
 
   @Column()
-  model: string;
+  normalizedModel: string;
 
   @Column()
   year: number;

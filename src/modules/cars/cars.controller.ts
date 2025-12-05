@@ -41,7 +41,7 @@ import {
   MODEL_PERCENTAGE_OPERATION,
   MODEL_PERCENTAGE_RESPONSE,
 } from '@/modules/cars/docs/cars.docs';
-import { CarsService } from '@/modules/cars/cars.service';
+import { CarsService } from '@/modules/cars/services/cars.service';
 import { CreateCarDto } from '@/modules/cars/dto/create-car.dto';
 import { UpdateCarDto } from '@/modules/cars/dto/update-car.dto';
 import { BulkCreateCarDto } from '@/modules/cars/dto/bulk-create-car.dto';

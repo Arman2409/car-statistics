@@ -1,19 +1,41 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Car } from '@/modules/cars/entities/car.entity';
 import { CreateCarDto } from '@/modules/cars/dto/create-car.dto';
 import { UpdateCarDto } from '@/modules/cars/dto/update-car.dto';
 import type { Repository } from 'typeorm';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Cache } from 'cache-manager';
+import { MAKES_CACHE_KEY } from './make-seeder.service';
 
 @Injectable()
 export class CarsService {
   constructor(
     @InjectRepository(Car)
     private carsRepository: Repository<Car>,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache
   ) {}
 
+  private async validateAmdNormalizeMake(make: string, isUpdate = false): Promise<string> {
+    if (!make && !isUpdate) throw new BadRequestException('Make is required');
+
+    const cachedMakes = await this.cacheManager.get<string[]>(MAKES_CACHE_KEY);
+    
+    if (!cachedMakes || !cachedMakes.includes(make.toLowerCase())) {
+      throw new BadRequestException(`Invalid car make: ${make}`);
+    }
+
+    return make.charAt(0).toUpperCase() + make.slice(1).toLowerCase();
+  }
+
   async create(createCarDto: CreateCarDto): Promise<Car> {
-    const car = this.carsRepository.create(createCarDto);
+    const normalizedMake = await this.validateAmdNormalizeMake(createCarDto.make);
+
+    const car = this.carsRepository.create({
+      ...createCarDto,
+      normalizedMake,
+    });
+    
     return this.carsRepository.save(car);
   }
 
@@ -33,8 +55,12 @@ export class CarsService {
   }
 
   async update(id: number, updateCarDto: UpdateCarDto): Promise<Partial<Car>> {
-    await this.carsRepository.update(id, updateCarDto);
-    return { id, ...updateCarDto };
+    const normalizedMake = await this.validateAmdNormalizeMake(updateCarDto.make as string, true);
+    const updateResult = await this.carsRepository.update(id, {
+      ...updateCarDto,
+      normalizedMake,
+    });
+    return updateResult as Partial<Car>;
   }
 
   async remove(id: number): Promise<void> {
