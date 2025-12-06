@@ -2,12 +2,11 @@ import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bullmq';
-import { Car } from '@/modules/cars/entities/car.entity';
+import { Car, CAR_PUBLIC_FIELDS } from '@/modules/cars/entities/car.entity';
 import { RedisService } from '@/services/redis.service';
+import { getAveragePricePerModelQuery } from './utils/get-average-price-per-model-query';
 import { validateMakeAndModel } from '@/modules/cars/services/utils/validate-make-model';
 import { calculatePercentageFromGroupedResult, getGroupedCountQuery } from '@/modules/cars/services/utils/get-grouped-count-query';
-import { getAveragePricePerModelQuery } from '@/modules/cars/services/utils/get-average-price-per-model-query';
-import type { IngestionCarDto } from '@/modules/cars/dto/ingestion-car.dto';
 import { PromiseStatus } from '@/shared/constants/PromiseStatus';
 import { SortOrder } from '@/shared/constants/SortOrder';
 import { ALL_CARS_TTL_SECONDS, CacheKeys } from '@/modules/cars/constants/cache';
@@ -17,6 +16,7 @@ import type { CreateCarDto } from '@/modules/cars/dto/create-car.dto';
 import type { UpdateCarDto } from '@/modules/cars/dto/update-car.dto';
 import type { GetPercentageResponse } from '@/modules/cars/types/GetPercentageResponse';
 import type { GetAveragePricePerModelResponse } from '@/modules/cars/types/GetAveragePricePerModelResponse';
+import type { IngestionCarDto } from '@/modules/cars/dto/ingestion-car.dto';
 
 @Injectable()
 export class CarsService {  
@@ -123,7 +123,7 @@ export class CarsService {
       }
     }
 
-    const cars = await this.carsRepository.find({ order: { createdAt: SortOrder.DESC } });
+    const cars = await this.carsRepository.find({ order: { createdAt: SortOrder.DESC }, select: CAR_PUBLIC_FIELDS });
 
     if (client) {
       try {
@@ -137,7 +137,7 @@ export class CarsService {
   }
 
   async findOne(id: number): Promise<Car | null> {
-    return this.carsRepository.findOne({ where: { id } });
+    return this.carsRepository.findOne({ where: { id }, select: CAR_PUBLIC_FIELDS });
   }
 
   async update(id: number, updatePayload: UpdateCarDto): Promise<Partial<Car>> {
@@ -192,7 +192,7 @@ export class CarsService {
     return rows.map((row: any) => ({
       make: row.make,
       model: row.model,
-      averagePrice: parseFloat(row.averagePrice),
+      averagePrice: Math.round(parseFloat(row.averagePrice)),
     }));
   }
 

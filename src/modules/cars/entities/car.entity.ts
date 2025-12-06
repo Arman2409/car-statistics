@@ -34,3 +34,5 @@ export class Car {
   @UpdateDateColumn()
   updatedAt: Date;
 }
+
+export const CAR_PUBLIC_FIELDS: (keyof Car)[] = [ 'normalizedMake', 'normalizedModel', 'year', 'price', 'createdAt']

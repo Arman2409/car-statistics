@@ -4,7 +4,7 @@ import { BullModule } from '@nestjs/bull';
 import { CarsService } from '@/modules/cars/services/cars.service';
 import { CarsController } from '@/modules/cars/cars.controller';
 import { Car } from '@/modules/cars/entities/car.entity';
-import { MakeSeederService } from '@/modules/cars/services/make-seeder.service';
+import { MakeAndModelSeederService } from '@/modules/cars/services/make-and-model-seeder.service';
 import { HttpModule } from '@nestjs/axios';
 import { RedisService } from '@/services/redis.service';
 import { BulkCreateProcessor } from '@/modules/cars/processors/bulk-create.processor';
@@ -18,8 +18,7 @@ import { BulkCreateProcessor } from '@/modules/cars/processors/bulk-create.proce
     }),
   ],
   controllers: [CarsController],
-  providers: [CarsService, MakeSeederService, RedisService, Logger, BulkCreateProcessor],
-  exports: [CarsService, MakeSeederService],
+  providers: [CarsService, MakeAndModelSeederService, RedisService, Logger, BulkCreateProcessor],
 })
 export class CarsModule {}
 

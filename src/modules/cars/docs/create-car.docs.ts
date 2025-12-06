@@ -12,7 +12,7 @@ export const YEAR_API = {
   description: 'Year of the car',
   example: 2020,
   minimum: 1900,
-  maximum: 2100,
+  maximum: 2050,
 };
 
 export const PRICE_API = {

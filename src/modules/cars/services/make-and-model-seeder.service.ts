@@ -11,8 +11,8 @@ import { FALLBACK_MAKES, FALLBACK_MODELS } from '@/modules/cars/constants/car-da
 import { ConfigService } from '@nestjs/config';
 
 @Injectable()
-export class MakeSeederService implements OnModuleInit {
-  private readonly logger = new Logger(MakeSeederService.name);
+export class MakeAndModelSeederService implements OnModuleInit {
+  private readonly logger = new Logger(MakeAndModelSeederService.name);
   private readonly apiaryApiUrl: string | undefined;
 
   constructor(
