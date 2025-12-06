@@ -2,28 +2,40 @@ import { Logger, Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { BullModule } from '@nestjs/bull';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 import { AppController } from '@/app.controller';
 import { AuthModule } from '@/modules/auth/auth.module';
 import { UsersModule } from '@/modules/users/users.module';
 import { CarsModule } from '@/modules/cars/cars.module';
+import { THROTTLE_SETTINGS } from '@/modules/cars/constants/throttle';
 import { User } from '@/modules/users/entities/user.entity';
 import { Car } from '@/modules/cars/entities/car.entity';
-import { RedisService } from '@/services/redis.service';
 import configs from '@/config';
+import { RedisModule } from '@/modules/redis/redis.module';
 
 @Module({
   imports: [
+    ThrottlerModule.forRoot([
+      {
+        name: THROTTLE_SETTINGS.DEFAULT.name,
+        ttl: THROTTLE_SETTINGS.DEFAULT.ttl,
+        limit: THROTTLE_SETTINGS.DEFAULT.limit,
+      },
+    ]),
     ConfigModule.forRoot({
       isGlobal: true,
       load: configs,
     }),
-    BullModule.forRoot({
-      redis: {
-        host: process.env.REDIS_HOST || 'localhost',
-        port: Number(process.env.REDIS_PORT) || 6379,
-        ...(process.env.REDIS_PASSWORD && { password: process.env.REDIS_PASSWORD }),
-        ...(process.env.REDIS_URL && { url: process.env.REDIS_URL }),
-      },
+    BullModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: (configService: ConfigService) => ({
+        redis: {
+          host: configService.get<string>('redis.redis_host'),
+          port: configService.get<number>('redis.redis_port'),
+        },
+      }),
+      inject: [ConfigService],
     }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
@@ -42,10 +54,17 @@ import configs from '@/config';
     AuthModule,
     UsersModule,
     CarsModule,
+    RedisModule,
   ],
-  
   controllers: [AppController],
-  providers: [RedisService, Logger],
+  providers: [
+    Logger,
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
 })
+
 export class AppModule {}
 

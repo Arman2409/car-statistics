@@ -4,7 +4,9 @@ import { Job } from 'bullmq';
 import { CarsService } from '@/modules/cars/services/cars.service';
 import type { IngestionCarDto } from '@/modules/cars/dto/ingestion-car.dto';
 
-@Processor('bulk-create')
+export const BULK_CREATE_QUEUE = 'bulk-create';
+
+@Processor(BULK_CREATE_QUEUE)
 export class BulkCreateProcessor {
   private readonly logger = new Logger(BulkCreateProcessor.name);
 

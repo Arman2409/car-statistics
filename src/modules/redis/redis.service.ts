@@ -5,9 +5,10 @@ import Redis from 'ioredis';
 @Injectable()
 export class RedisService implements OnModuleDestroy {
   private readonly client: Redis;
+  private connected: boolean = false;
 
   constructor(private readonly logger: Logger) {
-    if(this.client) {
+    if(this.client                           ) {
       this.logger.warn('🔌 Redis client already initialized');
     }
 
@@ -18,11 +19,11 @@ export class RedisService implements OnModuleDestroy {
     });
 
     this.client.on('connect', () => {
-      console.log('🔌 Redis connected');
+      this.logger.log('🔌 Redis connected');
     });
 
     this.client.on('error', (err) => {
-      console.error('❌ Redis error:', err);
+      this.logger.error(`❌ Redis error: ${err.message}`);
     });
 
   }

@@ -3,13 +3,15 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bullmq';
 import { Car, CAR_PUBLIC_FIELDS } from '@/modules/cars/entities/car.entity';
-import { RedisService } from '@/services/redis.service';
+import { RedisService } from '@/modules/redis/redis.service';
 import { getAveragePricePerModelQuery } from './utils/get-average-price-per-model-query';
 import { validateMakeAndModel } from '@/modules/cars/services/utils/validate-make-model';
 import { calculatePercentageFromGroupedResult, getGroupedCountQuery } from '@/modules/cars/services/utils/get-grouped-count-query';
 import { PromiseStatus } from '@/shared/constants/PromiseStatus';
 import { SortOrder } from '@/shared/constants/SortOrder';
 import { ALL_CARS_TTL_SECONDS, CacheKeys } from '@/modules/cars/constants/cache';
+import { ResponseLimits } from '@/modules/cars/constants/limits';
+import { BULK_CREATE_QUEUE } from '@/modules/cars/processors/bulk-create.processor';
 import type { BulkCreateResponse, BulkCreationError } from '@/modules/cars/types/BulkCreateResponse';
 import type { Repository } from 'typeorm';
 import type { CreateCarDto } from '@/modules/cars/dto/create-car.dto';
@@ -25,7 +27,7 @@ export class CarsService {
     private carsRepository: Repository<Car>,
     private readonly redisService: RedisService,
     private readonly logger: Logger,
-    @InjectQueue('bulk-create')
+    @InjectQueue(BULK_CREATE_QUEUE)
     private bulkCreateQueue: Queue,
   ) { }
 
@@ -111,25 +113,29 @@ export class CarsService {
 
   async findAll(): Promise<Car[]> {
     const client = this.redisService?.getClient?.();
+
     if (client) {
       try {
         const cached = await client.get(CacheKeys.ALL_CARS);
         if (cached) {
-          const parsed: Car[] = JSON.parse(cached) as Car[];
-          return parsed;
+          return JSON.parse(cached) as Car[];
         }
       } catch (err) {
-        this.logger?.error('Failed reading from Redis cache', err as Error);
+        this.logger?.error('Failed reading from Redis cache, continuing', err as Error);
       }
     }
 
-    const cars = await this.carsRepository.find({ order: { createdAt: SortOrder.DESC }, select: CAR_PUBLIC_FIELDS });
+    const cars = await this.carsRepository.find({
+      order: { createdAt: SortOrder.DESC },
+      select: CAR_PUBLIC_FIELDS,
+      take: ResponseLimits.ALL_CARS,
+    });
 
     if (client) {
       try {
         await client.set(CacheKeys.ALL_CARS, JSON.stringify(cars), 'EX', ALL_CARS_TTL_SECONDS);
       } catch (err) {
-        this.logger?.warn('Failed to write cars list to Redis cache');
+        this.logger?.error('Failed to write cars list to Redis cache');
       }
     }
 
@@ -189,11 +195,13 @@ export class CarsService {
 
   async getAveragePricePerModel(): Promise<GetAveragePricePerModelResponse> {
     const rows = await getAveragePricePerModelQuery(this.carsRepository);
-    return rows.map((row: any) => ({
+    const mappedRows = rows.map((row: any) => ({
       make: row.make,
       model: row.model,
       averagePrice: Math.round(parseFloat(row.averagePrice)),
     }));
+
+    return mappedRows.slice(0, ResponseLimits.AVERAGE_PRICE_PER_MODEL);
   }
 
   async getMakePercentage(): Promise<GetPercentageResponse> {
@@ -203,11 +211,12 @@ export class CarsService {
     );
 
     const results = calculatePercentageFromGroupedResult(groupedCounts);
-
-    return results.map(row => ({
+    const mappedResults = results.map(row => ({
       make: row.group,
       percentage: row.percentage,
     }));
+
+    return mappedResults.slice(0, ResponseLimits.MAKE_PERCENTAGE);
   }
 
   async getModelPercentage(): Promise<GetPercentageResponse> {
@@ -217,17 +226,17 @@ export class CarsService {
     );
 
     const results = calculatePercentageFromGroupedResult(groupedCounts);
-
-    return results.map(row => ({
+    const mappedResults = results.map(row => ({
       model: row.group,
       percentage: row.percentage,
     }));
+
+    return mappedResults.slice(0, ResponseLimits.MODEL_PERCENTAGE);
   }
 
   private async invalidateAllCarsCache(): Promise<void> {
     try {
-      const client = this.redisService?.getClient?.();
-      if (client) await client.del(CacheKeys.ALL_CARS);
+      if (this.redisService) await this.redisService.getClient().del(CacheKeys.ALL_CARS);
     } catch (err) {
       this.logger?.warn('Failed to invalidate cars cache');
     }

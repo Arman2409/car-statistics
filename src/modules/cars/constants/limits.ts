@@ -1,0 +1,6 @@
+export enum ResponseLimits {
+  ALL_CARS = 1000,
+  AVERAGE_PRICE_PER_MODEL = 500,
+  MAKE_PERCENTAGE = 500,
+  MODEL_PERCENTAGE = 500,
+};

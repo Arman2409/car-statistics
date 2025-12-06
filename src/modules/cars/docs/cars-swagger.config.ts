@@ -1,7 +1,8 @@
 import { ApiOperationOptions, ApiResponseOptions } from '@nestjs/swagger';
-import { SwaggerStatus, SwaggerErrorType, SwaggerOperation, SwaggerDescription } from './swagger.enums';
-import { Car } from '../entities/car.entity';
+import { SwaggerErrorType, SwaggerOperation, SwaggerDescription } from '@/modules/cars/docs/swagger.enums';
+import { Car } from '@/modules/cars/entities/car.entity';
 import { createSwaggerOperation, createSwaggerResponse, createErrorResponse, createArrayResponse } from './swagger.helpers';
+import { HttpStatus } from '@nestjs/common';
 
 export const CARS_TAG = 'Cars';
 
@@ -49,14 +50,14 @@ export function createCarsSwaggerConfig(): CarsSwaggerConfig {
       modelPercentage: createSwaggerOperation(SwaggerOperation.MODEL_PERCENTAGE),
     },
     responses: {
-      create: createSwaggerResponse(SwaggerStatus.CREATED, SwaggerDescription.CAR_CREATED, Car),
-      bulkCreate: createArrayResponse(SwaggerStatus.CREATED, SwaggerDescription.CARS_CREATED, Car),
-      getAll: createArrayResponse(SwaggerStatus.OK, SwaggerDescription.LIST_ALL_CARS, Car),
-      getOne: createSwaggerResponse(SwaggerStatus.OK, SwaggerDescription.CAR_FOUND, Car),
-      update: createSwaggerResponse(SwaggerStatus.OK, SwaggerDescription.CAR_UPDATED, Car),
-      delete: createSwaggerResponse(SwaggerStatus.NO_CONTENT, SwaggerDescription.CAR_DELETED),
+      create: createSwaggerResponse(HttpStatus.CREATED, SwaggerDescription.CAR_CREATED, Car),
+      bulkCreate: createArrayResponse(HttpStatus.ACCEPTED, SwaggerDescription.CARS_QUEUED, Car),
+      getAll: createArrayResponse(HttpStatus.OK, SwaggerDescription.LIST_ALL_CARS, Car),
+      getOne: createSwaggerResponse(HttpStatus.OK, SwaggerDescription.CAR_FOUND, Car),
+      update: createSwaggerResponse(HttpStatus.OK, SwaggerDescription.CAR_UPDATED, Car),
+      delete: createSwaggerResponse(HttpStatus.NO_CONTENT, SwaggerDescription.CAR_DELETED),
       averagePricePerModel: createSwaggerResponse(
-        SwaggerStatus.OK,
+        HttpStatus.OK,
         SwaggerDescription.AVERAGE_PRICE_PER_MODEL,
         undefined,
         {
@@ -72,7 +73,7 @@ export function createCarsSwaggerConfig(): CarsSwaggerConfig {
         },
       ),
       makePercentage: createSwaggerResponse(
-        SwaggerStatus.OK,
+        HttpStatus.OK,
         SwaggerDescription.MAKE_PERCENTAGE,
         undefined,
         {
@@ -87,7 +88,7 @@ export function createCarsSwaggerConfig(): CarsSwaggerConfig {
         },
       ),
       modelPercentage: createSwaggerResponse(
-        SwaggerStatus.OK,
+        HttpStatus.OK,
         SwaggerDescription.MODEL_PERCENTAGE,
         undefined,
         {
@@ -103,9 +104,9 @@ export function createCarsSwaggerConfig(): CarsSwaggerConfig {
       ),
     },
     errors: {
-      validationError: createErrorResponse(SwaggerStatus.BAD_REQUEST, SwaggerErrorType.VALIDATION_ERROR),
-      unauthorized: createErrorResponse(SwaggerStatus.UNAUTHORIZED, SwaggerErrorType.UNAUTHORIZED),
-      notFound: createErrorResponse(SwaggerStatus.NOT_FOUND, SwaggerErrorType.NOT_FOUND),
+      validationError: createErrorResponse(HttpStatus.BAD_REQUEST, SwaggerErrorType.VALIDATION_ERROR),
+      unauthorized: createErrorResponse(HttpStatus.UNAUTHORIZED, SwaggerErrorType.UNAUTHORIZED),
+      notFound: createErrorResponse(HttpStatus.NOT_FOUND, SwaggerErrorType.NOT_FOUND),
     },
   };
 }

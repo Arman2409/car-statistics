@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
-import { RedisService } from '@/services/redis.service';
+import { RedisService } from '@/modules/redis/redis.service';
 import { CacheKeys } from '@/modules/cars/constants/cache';
 import { FALLBACK_MAKES, FALLBACK_MODELS } from '@/modules/cars/constants/car-data';
 import { ConfigService } from '@nestjs/config';

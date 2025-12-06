@@ -6,4 +6,9 @@ export class AppController {
   getHello(): string {
     return 'Server Running!';
   }
+
+  @Get('health')
+  healthCheck(): string {
+    return 'OK';
+  }
 }

@@ -11,6 +11,7 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import {
   ApiTags,
   ApiOperation,
@@ -18,13 +19,14 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { CARS_TAG, createCarsSwaggerConfig } from '@/modules/cars/docs/cars-swagger.config';
+import { THROTTLE_SETTINGS } from '@/modules/cars/constants/throttle';
 import { CarsService } from '@/modules/cars/services/cars.service';
 import { CreateCarDto } from '@/modules/cars/dto/create-car.dto';
 import { UpdateCarDto } from '@/modules/cars/dto/update-car.dto';
-import { JwtAuthGuard } from '@/modules/auth/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '@/modules/cars/guards/jwt-auth.guard';
 import { Car } from '@/modules/cars/entities/car.entity';
-import { ApiKeyAuthGuard } from '@/modules/cars/guards/ApiKeyAuthGuard';
-import { IngestionCarDto } from '@/modules/cars/dto/ingestion-car.dto';
+import { ApiKeyAuthGuard } from '@/modules/cars/guards/api-key-auth.guard';
+import type { IngestionCarDto } from '@/modules/cars/dto/ingestion-car.dto';
 
 const swagger = createCarsSwaggerConfig();
 
@@ -36,9 +38,10 @@ export class CarsController {
 
   @UseGuards(ApiKeyAuthGuard)
   @Post('bulk')
+  @Throttle({ default: { limit: 200, ttl: 60000 } })
   @HttpCode(HttpStatus.ACCEPTED)
   @ApiOperation(swagger.operations.bulkCreate)
-  @ApiResponse({ status: 202, description: 'Bulk create job accepted for processing' })
+  @ApiResponse(swagger.responses.bulkCreate)
   @ApiResponse(swagger.errors.validationError)
   @ApiResponse(swagger.errors.unauthorized)
   async bulkCreate(@Body() cars: IngestionCarDto[]): Promise<void> {
@@ -56,6 +59,7 @@ export class CarsController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Throttle(THROTTLE_SETTINGS.FIND_ALL)
   @Get()
   @ApiOperation(swagger.operations.getAll)
   @ApiResponse(swagger.responses.getAll)
@@ -100,6 +104,7 @@ export class CarsController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Throttle(THROTTLE_SETTINGS.STATS)
   @Get('stats/average-price-per-model')
   @ApiOperation(swagger.operations.averagePricePerModel)
   @ApiResponse(swagger.responses.averagePricePerModel)
@@ -109,6 +114,7 @@ export class CarsController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Throttle(THROTTLE_SETTINGS.STATS)
   @Get('stats/make-percentage')
   @ApiOperation(swagger.operations.makePercentage)
   @ApiResponse(swagger.responses.makePercentage)
@@ -118,6 +124,7 @@ export class CarsController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Throttle(THROTTLE_SETTINGS.STATS)
   @Get('stats/model-percentage')
   @ApiOperation(swagger.operations.modelPercentage)
   @ApiResponse(swagger.responses.modelPercentage)

@@ -1,4 +1,4 @@
-import type { RedisService } from "@/services/redis.service";
+import type { RedisService } from "@/modules/redis/redis.service";
 import type{ Logger } from "@nestjs/common";
 
 export interface ValidateMakeAndModelArgs {

@@ -1,11 +1,3 @@
-export enum SwaggerStatus {
-  OK = 200,
-  CREATED = 201,
-  NO_CONTENT = 204,
-  BAD_REQUEST = 400,
-  UNAUTHORIZED = 401,
-  NOT_FOUND = 404,
-}
 
 export enum SwaggerErrorType {
   VALIDATION_ERROR = 'Validation error',
@@ -27,7 +19,7 @@ export enum SwaggerOperation {
 
 export enum SwaggerDescription {
   CAR_CREATED = 'Car created successfully',
-  CARS_CREATED = 'Cars created successfully',
+  CARS_QUEUED = 'Cars queued for ingestion',
   CAR_FOUND = 'Car found',
   CAR_UPDATED = 'Car updated successfully',
   CAR_DELETED = 'Car deleted successfully',

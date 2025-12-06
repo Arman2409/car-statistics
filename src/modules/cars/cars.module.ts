@@ -6,19 +6,18 @@ import { CarsController } from '@/modules/cars/cars.controller';
 import { Car } from '@/modules/cars/entities/car.entity';
 import { MakeAndModelSeederService } from '@/modules/cars/services/make-and-model-seeder.service';
 import { HttpModule } from '@nestjs/axios';
-import { RedisService } from '@/services/redis.service';
-import { BulkCreateProcessor } from '@/modules/cars/processors/bulk-create.processor';
+import { BULK_CREATE_QUEUE, BulkCreateProcessor } from '@/modules/cars/processors/bulk-create.processor';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Car]),
     HttpModule.register({}),
     BullModule.registerQueue({
-      name: 'bulk-create',
+      name: BULK_CREATE_QUEUE,
     }),
   ],
   controllers: [CarsController],
-  providers: [CarsService, MakeAndModelSeederService, RedisService, Logger, BulkCreateProcessor],
+  providers: [CarsService, MakeAndModelSeederService, Logger, BulkCreateProcessor],
 })
 export class CarsModule {}
 

@@ -1,12 +1,13 @@
-import { ApiOperationOptions, ApiResponseOptions } from '@nestjs/swagger';
-import { SwaggerStatus, SwaggerErrorType, SwaggerOperation, SwaggerDescription } from './swagger.enums';
+import { SwaggerErrorType, SwaggerOperation, SwaggerDescription } from './swagger.enums';
+import { HttpStatus } from '@nestjs/common';
+import type { ApiOperationOptions, ApiResponseOptions } from '@nestjs/swagger';
 
 export function createSwaggerOperation(summary: SwaggerOperation): ApiOperationOptions {
   return { summary };
 }
 
 export function createSwaggerResponse(
-  status: SwaggerStatus,
+  status: HttpStatus,
   description: SwaggerDescription | string,
   type?: any,
   schema?: any,
@@ -28,7 +29,7 @@ export function createSwaggerResponse(
 }
 
 export function createErrorResponse(
-  status: SwaggerStatus,
+  status: HttpStatus,
   description: SwaggerErrorType | string,
 ): ApiResponseOptions {
   return {
@@ -38,7 +39,7 @@ export function createErrorResponse(
 }
 
 export function createArrayResponse(
-  status: SwaggerStatus,
+  status: HttpStatus,
   description: SwaggerDescription | string,
   itemType: any,
 ): ApiResponseOptions {
