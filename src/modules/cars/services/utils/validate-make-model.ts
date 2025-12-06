@@ -1,8 +1,8 @@
 import { BadRequestException } from "@nestjs/common";
-import { ValidateMakeAndModelArgs, ValidateMakeAndModelResult } from "@/modules/cars/types/ValidateMakeAndModelArgs";
 import { ValidationCacheKeys } from "@/modules/cars/constants/ValidationCacheKeys";
+import type { ValidateMakeAndModelArgs, ValidateMakeAndModelResult } from "@/modules/cars/types/ValidateMakeAndModelArgs";
 
-
+// Validates the provided make and model against cached values.
 export const validateMakeAndModel = async (
   {
     redisService,

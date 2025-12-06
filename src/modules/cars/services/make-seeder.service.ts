@@ -8,24 +8,27 @@ import { firstValueFrom } from 'rxjs';
 import { RedisService } from '@/services/redis.service';
 import { ValidationCacheKeys } from '@/modules/cars/constants/ValidationCacheKeys';
 import { FALLBACK_MAKES, FALLBACK_MODELS } from '../constants/fallback-data';
-import { APIARY_API_URL } from '@/modules/cars/constants/api';
+import { ConfigService } from '@nestjs/config';
 // TODO: Maybe this URL above should no be publicly available?
 
 @Injectable()
 export class MakeSeederService implements OnModuleInit {
   private readonly logger = new Logger(MakeSeederService.name);
+  private readonly apiaryApiUrl: string | undefined;
 
   constructor(
      private readonly redisService: RedisService,
       private readonly httpService: HttpService,
-  ) {}
-
-  // Automatically called when the module initializes
-  async onModuleInit(): Promise<void> {
-    await this.seedMakesIfEmpty();
+      private readonly configService: ConfigService,
+  ) {
+    this.apiaryApiUrl = this.configService.get<string>('EXTERNAL_APIARY_URL');
   }
 
-  public async seedMakesIfEmpty(): Promise<void> {
+  async onModuleInit(): Promise<void> {
+    await this.seedMakesAndModelsIfEmpty();
+  }
+
+  public async seedMakesAndModelsIfEmpty(): Promise<void> {
     // 1. Idempotency Check: Don't fetch if already in Redis
     const cachedMakes = await this.redisService.getClient().get(ValidationCacheKeys.MAKES);
     const cachedModels = await this.redisService.getClient().get(ValidationCacheKeys.MODELS);
@@ -40,12 +43,30 @@ export class MakeSeederService implements OnModuleInit {
     let makesToCache: string[] = [];
     let modelToCache: string[] = [];
 
+    const useFallbackData = () => {
+      makesToCache = FALLBACK_MAKES;
+      modelToCache = FALLBACK_MODELS;
+    }
+
+     if(this.apiaryApiUrl === undefined) {
+        this.logger.warn("Received wrong data from API for makes and models validation");
+        useFallbackData();
+        return;
+      }
+
     try {
       // 2. Fetch data from the external API
       // Use firstValueFrom to handle the Observable returned by HttpService
+     
       const response = await firstValueFrom(
-        this.httpService.get<{make: string, model: string}[]>(APIARY_API_URL) 
+        this.httpService.get<{make: string, model: string}[]>(this.apiaryApiUrl) 
       );
+
+      if(!response.data.length) {
+        this.logger.warn("Received wrong data from API for makes and models validation");
+        useFallbackData();
+        return;
+      };
 
       // TODO: Check the response and the importance of firstValueFrom
       
@@ -67,14 +88,12 @@ export class MakeSeederService implements OnModuleInit {
     } catch (error) {
       this.logger.error(`Failed to fetch car makes from API: ${error.message}.`);
       
-      // 3. FALLBACK: Use hardcoded list on failure
-      makesToCache = FALLBACK_MAKES;
-      modelToCache = FALLBACK_MODELS;
+      // Use hardcoded list on failure
+      useFallbackData();
       this.logger.warn(`Using ${makesToCache.length} hardcoded fallback car makes .`);
     }
 
-    // 4. Cache the result in Redis with a long TTL (e.g., 90 days = 7776000 seconds)
-    // This is the caching step that makes your app self-sufficient after the first run
+    // The caching step that makes the app self-sufficient after the first run
     await this.redisService.getClient().set(ValidationCacheKeys.MAKES, JSON.stringify(makesToCache));
     await this.redisService.getClient().set(ValidationCacheKeys.MODELS, JSON.stringify(modelToCache));
     this.logger.log(`Car makes and models list successfully stored in Redis.`);

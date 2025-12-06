@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Car } from '@/modules/cars/entities/car.entity';
 import { RedisService } from '@/services/redis.service';
 import { validateMakeAndModel } from '@/modules/cars/services/utils/validate-make-model';
+import { calculatePercentageFromGroupedResult, getGroupedCountQuery } from '@/modules/cars/services/utils/get-grouped-count-query';
 import type { BulkCreateResponse } from '@/modules/cars/types/BulkCreateResponse';
 import type { Repository } from 'typeorm';
 import type { CreateCarDto } from '@/modules/cars/dto/create-car.dto';
@@ -17,9 +18,9 @@ export class CarsService {
     private carsRepository: Repository<Car>,
     private readonly redisService: RedisService,
     private readonly logger: Logger,
-  ) {}
+  ) { }
 
-  async create({make, model, ...createPayload}: CreateCarDto): Promise<Car> {
+  async create({ make, model, ...createPayload }: CreateCarDto): Promise<Car> {
     const { normalizedMake, normalizedModel } = await validateMakeAndModel({
       redisService: this.redisService,
       logger: this.logger,
@@ -32,54 +33,62 @@ export class CarsService {
       normalizedMake,
       normalizedModel,
     });
-    
+
     return this.carsRepository.save(car);
   }
 
-  async bulkCreate(cars: any[]): Promise<BulkCreateResponse> {
-    console.log("here 1")
 
-    const carsToCreate: Partial<Car>[] = [];
-    const errorMessages: {
-      index: number;
-      message: string;
-    }[] = [];
+  async bulkCreate(cars: CreateCarDto[]): Promise<BulkCreateResponse> {
 
-    for(let i = 0; i < cars.length; i++) {
-      const { make, model, ...createPayload } = cars[i];
+    // Validate all cars in parallel
+    const validationResults = await Promise.allSettled(
+      cars.map((car) =>
+        validateMakeAndModel({
+          redisService: this.redisService,
+          logger: this.logger,
+          make: car.make,
+          model: car.model,
+        })
+      )
+    );
 
-      let normalizedMake: string | undefined;
-      let normalizedModel: string | undefined;
-      try{
-        const result = await validateMakeAndModel({redisService: this.redisService, logger: this.logger, make, model});
-        normalizedMake = result.normalizedMake;
-        normalizedModel = result.normalizedModel;
-      } catch(err){
-        errorMessages.push({
-          index: i,
-          message: (err as Error).message,
+    const carsToInsert: Partial<Car>[] = [];
+    const errors: { index: number; message: string }[] = [];
+
+    validationResults.forEach((result, i) => {
+      if (result.status === 'fulfilled') {
+        const { normalizedMake, normalizedModel } = result.value;
+        const { make, model, ...payload } = cars[i];
+
+        carsToInsert.push({
+          ...payload,
+          normalizedMake,
+          normalizedModel,
         });
-        
-        continue;
+      } else {
+        errors.push({
+          index: i,
+          message: (result.reason as Error).message,
+        });
       }
+    });
 
-       carsToCreate.push({
-        ...createPayload,
-        normalizedMake: normalizedMake as string,
-        normalizedModel: normalizedModel as string,
-      });
+    if (carsToInsert.length > 0) {
+      const batchSize = 1000;
+
+      for (let i = 0; i < carsToInsert.length; i += batchSize) {
+        const batch = carsToInsert.slice(i, i + batchSize);
+        await this.carsRepository.insert(batch);
+      }
     }
-
-    const carEntities = this.carsRepository.create(carsToCreate);
-
-    const createResult = await this.carsRepository.save(carEntities);
 
     return {
-      created: createResult.length,
-      failed: errorMessages.length,
-      errors: errorMessages,
-    }
+      created: carsToInsert.length,
+      failed: errors.length,
+      errors,
+    };
   }
+
 
   async findAll(): Promise<Car[]> {
     return this.carsRepository.find({
@@ -91,7 +100,7 @@ export class CarsService {
     return this.carsRepository.findOne({ where: { id } });
   }
 
-   async update(id: number, updatePayload: UpdateCarDto): Promise<Partial<Car>> {
+  async update(id: number, updatePayload: UpdateCarDto): Promise<Partial<Car>> {
     const { make, model, ...restOfPayload } = updatePayload;
 
     // Perform validation and normalization using the extracted raw fields
@@ -120,8 +129,8 @@ export class CarsService {
 
     const updatedFields = {
       ...restOfPayload,
-      ...(normalizedMake ? {normalizedMake} : {}),
-      ...(normalizedModel ? {normalizedModel} : {}),
+      ...(normalizedMake ? { normalizedMake } : {}),
+      ...(normalizedModel ? { normalizedModel } : {}),
     }
 
     return updatedFields;
@@ -158,42 +167,31 @@ export class CarsService {
   }
 
   async getMakePercentage(): Promise<GetPercentageResponse> {
-    const total = await this.carsRepository.count();
-    if (total === 0) {
-      return [];
-    }
+    const groupedCounts = await getGroupedCountQuery(
+      this.carsRepository,
+      'normalizedMake',
+    );
 
-    const result = await this.carsRepository
-      .createQueryBuilder('car')
-      .select('car.normalizedMake', 'make')
-      .addSelect('COUNT(*)', 'count')
-      .groupBy('car.normalizedMake')
-      .orderBy('count', 'DESC')
-      .getRawMany();
+    const results = calculatePercentageFromGroupedResult(groupedCounts);
 
-    return result.map((row) => ({
-      make: row.make,
-      percentage: (parseInt(row.count) / total) * 100,
+    return results.map(row => ({
+      make: row.group,
+      percentage: row.percentage,
     }));
   }
 
   async getModelPercentage(): Promise<GetPercentageResponse> {
-    const total = await this.carsRepository.count();
-    if (total === 0) {
-      return [];
-    }
+    const groupedCounts = await getGroupedCountQuery(
+      this.carsRepository,
+      'normalizedModel',
+    );
 
-    const result = await this.carsRepository
-      .createQueryBuilder('car')
-      .select('car.normalizedModel', 'model')
-      .addSelect('COUNT(*)', 'count')
-      .groupBy('car.normalizedModel')
-      .orderBy('count', 'DESC')
-      .getRawMany();
+    const results = calculatePercentageFromGroupedResult(groupedCounts);
 
-    return result.map((row) => ({
-      model: row.model,
-      percentage: (parseInt(row.count) / total) * 100,
+    return results.map(row => ({
+      model: row.group,
+      percentage: row.percentage,
     }));
   }
+
 }

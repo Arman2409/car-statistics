@@ -17,85 +17,69 @@ import {
   ApiResponse,
   ApiBearerAuth,
 } from '@nestjs/swagger';
-import {
-  CARS_TAG,
-  CREATE_OPERATION,
-  CREATE_RESPONSE,
-  BULK_CREATE_OPERATION,
-  BULK_CREATE_RESPONSE,
-  GET_ALL_OPERATION,
-  GET_ALL_RESPONSE,
-  GET_ONE_OPERATION,
-  GET_ONE_RESPONSE,
-  UPDATE_OPERATION,
-  UPDATE_RESPONSE,
-  DELETE_OPERATION,
-  DELETE_RESPONSE,
-  VALIDATION_ERROR,
-  UNAUTHORIZED,
-  NOT_FOUND,
-  AVERAGE_PRICE_PER_MODEL_OPERATION,
-  AVERAGE_PRICE_PER_MODEL_RESPONSE,
-  MAKE_PERCENTAGE_OPERATION,
-  MAKE_PERCENTAGE_RESPONSE,
-  MODEL_PERCENTAGE_OPERATION,
-  MODEL_PERCENTAGE_RESPONSE,
-} from '@/modules/cars/docs/cars.docs';
+import { CARS_TAG, createCarsSwaggerConfig } from '@/modules/cars/docs/cars-swagger.config';
 import { CarsService } from '@/modules/cars/services/cars.service';
 import { CreateCarDto } from '@/modules/cars/dto/create-car.dto';
 import { UpdateCarDto } from '@/modules/cars/dto/update-car.dto';
 import { JwtAuthGuard } from '@/modules/auth/guards/jwt-auth.guard';
 import { Car } from '@/modules/cars/entities/car.entity';
-import { BulkCreateResponse } from '@/modules/cars/types/BulkCreateResponse';
+import { BulkCreateResponse } from './types/BulkCreateResponse';
+import { ApiKeyAuthGuard } from './guards/ApiKeyAuthGuard';
+
+const swagger = createCarsSwaggerConfig();
 
 @ApiTags(CARS_TAG)
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
 @Controller('cars')
 export class CarsController {
   constructor(private readonly carsService: CarsService) {}
 
+  @UseGuards(JwtAuthGuard)
   @Post()
-  @ApiOperation(CREATE_OPERATION)
-  @ApiResponse(CREATE_RESPONSE)
-  @ApiResponse(VALIDATION_ERROR)
-  @ApiResponse(UNAUTHORIZED)
+  @ApiOperation(swagger.operations.create)
+  @ApiResponse(swagger.responses.create)
+  @ApiResponse(swagger.errors.validationError)
+  @ApiResponse(swagger.errors.unauthorized)
   create(@Body() createCarDto: CreateCarDto): Promise<Car> {
     return this.carsService.create(createCarDto);
   }
 
+ @UseGuards(ApiKeyAuthGuard)
   @Post('bulk')
-  @ApiOperation(BULK_CREATE_OPERATION)
-  @ApiResponse(BULK_CREATE_RESPONSE)
-  @ApiResponse(VALIDATION_ERROR)
-  @ApiResponse(UNAUTHORIZED)
+  @ApiOperation(swagger.operations.bulkCreate)
+  @ApiResponse(swagger.responses.bulkCreate)
+  @ApiResponse(swagger.errors.validationError)
+  @ApiResponse(swagger.errors.unauthorized)
   bulkCreate(@Body() cars: CreateCarDto[]): Promise<BulkCreateResponse> {
     return this.carsService.bulkCreate(cars);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get()
-  @ApiOperation(GET_ALL_OPERATION)
-  @ApiResponse(GET_ALL_RESPONSE)
-  @ApiResponse(UNAUTHORIZED)
+  @ApiOperation(swagger.operations.getAll)
+  @ApiResponse(swagger.responses.getAll)
+  @ApiResponse(swagger.errors.unauthorized)
   findAll(): Promise<Car[]> {
     return this.carsService.findAll();
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get(':id')
-  @ApiOperation(GET_ONE_OPERATION)
-  @ApiResponse(GET_ONE_RESPONSE)
-  @ApiResponse(NOT_FOUND)
-  @ApiResponse(UNAUTHORIZED)
+  @ApiOperation(swagger.operations.getOne)
+  @ApiResponse(swagger.responses.getOne)
+  @ApiResponse(swagger.errors.notFound)
+  @ApiResponse(swagger.errors.unauthorized)
   findOne(@Param('id', ParseIntPipe) id: number): Promise<Car | null> {
     return this.carsService.findOne(id);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Patch(':id')
-  @ApiOperation(UPDATE_OPERATION)
-  @ApiResponse(UPDATE_RESPONSE)
-  @ApiResponse(NOT_FOUND)
-  @ApiResponse(VALIDATION_ERROR)
-  @ApiResponse(UNAUTHORIZED)
+  @ApiOperation(swagger.operations.update)
+  @ApiResponse(swagger.responses.update)
+  @ApiResponse(swagger.errors.notFound)
+  @ApiResponse(swagger.errors.validationError)
+  @ApiResponse(swagger.errors.unauthorized)
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateCarDto: UpdateCarDto,
@@ -103,36 +87,40 @@ export class CarsController {
     return this.carsService.update(id, updateCarDto);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation(DELETE_OPERATION)
-  @ApiResponse(DELETE_RESPONSE)
-  @ApiResponse(NOT_FOUND)
-  @ApiResponse(UNAUTHORIZED)
-  async remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
+  @ApiOperation(swagger.operations.delete)
+  @ApiResponse(swagger.responses.delete)
+  @ApiResponse(swagger.errors.notFound)
+  @ApiResponse(swagger.errors.unauthorized)
+  remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
     return this.carsService.remove(id);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get('stats/average-price-per-model')
-  @ApiOperation(AVERAGE_PRICE_PER_MODEL_OPERATION)
-  @ApiResponse(AVERAGE_PRICE_PER_MODEL_RESPONSE)
-  @ApiResponse(UNAUTHORIZED)
+  @ApiOperation(swagger.operations.averagePricePerModel)
+  @ApiResponse(swagger.responses.averagePricePerModel)
+  @ApiResponse(swagger.errors.unauthorized)
   getAveragePricePerModel() {
     return this.carsService.getAveragePricePerModel();
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get('stats/make-percentage')
-  @ApiOperation(MAKE_PERCENTAGE_OPERATION)
-  @ApiResponse(MAKE_PERCENTAGE_RESPONSE)
-  @ApiResponse(UNAUTHORIZED)
+  @ApiOperation(swagger.operations.makePercentage)
+  @ApiResponse(swagger.responses.makePercentage)
+  @ApiResponse(swagger.errors.unauthorized)
   getMakePercentage() {
     return this.carsService.getMakePercentage();
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get('stats/model-percentage')
-  @ApiOperation(MODEL_PERCENTAGE_OPERATION)
-  @ApiResponse(MODEL_PERCENTAGE_RESPONSE)
-  @ApiResponse(UNAUTHORIZED)
+  @ApiOperation(swagger.operations.modelPercentage)
+  @ApiResponse(swagger.responses.modelPercentage)
+  @ApiResponse(swagger.errors.unauthorized)
   getModelPercentage() {
     return this.carsService.getModelPercentage();
   }

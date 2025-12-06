@@ -14,7 +14,7 @@ import { RedisService } from '@/services/redis.service';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [databaseConfig],
+      load: [databaseConfig, () => require('./config/external.config').default()],
     }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],

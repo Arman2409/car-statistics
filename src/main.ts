@@ -6,7 +6,7 @@ import {
   SWAGGER_SETTINGS,
   GLOBAL_VALIDATION_SETTINGS,
   SwaggerSetupDetails,
-} from '@/constants/settings';
+} from '@/shared/constants/settings';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
