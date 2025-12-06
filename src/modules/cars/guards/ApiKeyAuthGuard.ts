@@ -7,7 +7,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Request } from 'express';
+import type { Request } from 'express';
 
 // Define the name of the header you expect the API key to be in
 const API_KEY_HEADER = 'x-api-key';
@@ -18,9 +18,8 @@ export class ApiKeyAuthGuard implements CanActivate {
 
   constructor(private readonly configService: ConfigService) {
     // Read the secure key from the environment during Guard initialization
-    this.requiredApiKey = this.configService.get<string>('INGESTION_API_KEY');
+    this.requiredApiKey = this.configService.get<string>('external.ingestion_api_key');
     
-    console.log('Required API Key:', this.requiredApiKey); // For debugging purposes only
     if (!this.requiredApiKey) {
         // This is a safety check for development setup errors;
         throw new Error('INGESTION_API_KEY is not defined in the environment.');

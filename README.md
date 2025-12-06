@@ -2,22 +2,6 @@
 
 A NestJS backend service for managing car data, processing high-volume car data ingestion, and providing statistics endpoints.
 
-## Features
-
-- ✅ JWT-based authentication with username/password
-- ✅ Car CRUD operations (Create, Read, Update, Delete)
-- ✅ High-volume data ingestion endpoint (handles ~2000 cars/minute)
-- ✅ Statistics endpoints:
-  - Average price per model (grouped by make + model)
-  - Percentage distribution per make
-  - Percentage distribution per model
-- ✅ Swagger API documentation at `/api/docs`
-- ✅ Input validation using class-validator and class-transformer
-- ✅ PostgreSQL database with TypeORM
-- ✅ Comprehensive unit and E2E tests
-- ✅ Absolute imports with `@/` prefix
-- ✅ Type-safe imports with `import type` for type-only imports
-
 ## Tech Stack
 
 - **Framework:** NestJS
@@ -32,7 +16,8 @@ A NestJS backend service for managing car data, processing high-volume car data 
 
 - Node.js (v18 or higher)
 - PostgreSQL (v12 or higher)
-- pnpm (or npm/yarn)
+- Redis
+- pnpm (or npm/yarn/bun.js)
 
 ## Project Setup
 
@@ -44,31 +29,7 @@ pnpm install
 
 ### 2. Database Setup
 
-Create a PostgreSQL database using one of the following methods:
-
-**Option 1: Using `createdb` command (PostgreSQL utility)**
-```bash
-createdb car_statistics
-```
-*Note: `createdb` is a PostgreSQL command-line utility that comes with PostgreSQL installation. It's not an npm package.*
-
-**Option 2: Using `psql` command-line client**
-```bash
-psql -U postgres -c "CREATE DATABASE car_statistics;"
-```
-
-**Option 3: Using `psql` interactive mode**
-```bash
-psql -U postgres
-```
-Then run:
-```sql
-CREATE DATABASE car_statistics;
-\q
-```
-
-**Option 4: Using a database GUI tool**
-Use tools like pgAdmin, DBeaver, or TablePlus to create the database.
+Install and setup PostgreSQL and Redis. Create a PostgreSQL database and a user.
 
 ### 3. Environment Configuration
 
@@ -86,12 +47,18 @@ DB_NAME=car_statistics
 JWT_SECRET=your-secret-key-change-in-production
 JWT_EXPIRES_IN=1d
 
+# Redis Configuration
+REDIS_HOST=your-redis-host
+REDIS_PORT=ypur-redis-port
+
 # Application Configuration
 PORT=3000
 NODE_ENV=development
-```
 
-**Important:** Change `JWT_SECRET` to a strong, random string in production!
+# External API Configuration
+EXTERNAL_APIARY_URL=<your-external-apiary-url>
+INGESTION_API_KEY=<your-ingestion-api-key>
+```
 
 ### 4. Run Database Migrations
 
@@ -145,7 +112,7 @@ pnpm run start:prod
 ### Cars (Protected - Requires JWT Token)
 
 - `POST /cars` - Create a single car
-- `POST /cars/bulk` - Bulk create cars (for data ingestion)
+- `POST /cars/bulk` - Bulk create cars (this one requires API keyy instead)
 - `GET /cars` - List all cars
 - `GET /cars/:id` - Get car by ID
 - `PATCH /cars/:id` - Update car
@@ -211,7 +178,7 @@ To integrate with the AMA-task-data-seeder project:
 
 1. Fork/clone the data-seeder repository
 2. Configure it to send POST requests to `http://localhost:3000/cars/bulk`
-3. Include the JWT token in the Authorization header
+3. Include the INGESTION_API_KEY in the "x-api-key" header
 4. Send car data in batches for optimal performance
 
 ## Testing
@@ -237,39 +204,6 @@ pnpm run test:e2e
 ```
 
 **Note:** E2E tests require a running PostgreSQL database. Make sure your `.env` file is configured correctly.
-
-## Project Structure
-
-```
-src/
-├── modules/              # Feature modules
-│   ├── auth/             # Authentication module
-│   │   ├── dto/          # Data Transfer Objects
-│   │   ├── guards/       # JWT guards
-│   │   ├── strategies/   # Passport strategies
-│   │   ├── auth.service.ts
-│   │   ├── auth.controller.ts
-│   │   └── auth.module.ts
-│   ├── users/            # Users module
-│   │   ├── entities/     # User entity
-│   │   ├── users.service.ts
-│   │   └── users.module.ts
-│   └── cars/             # Cars module
-│       ├── dto/          # Car DTOs
-│       ├── entities/     # Car entity
-│       ├── cars.service.ts
-│       ├── cars.controller.ts
-│       └── cars.module.ts
-├── config/               # Configuration files
-│   ├── database.config.ts
-│   └── jwt.config.ts
-├── constants/            # Application constants
-│   └── settings/        # Settings and configurations
-├── scripts/             # Utility scripts
-│   └── seed-user.ts     # User seeding script
-├── app.module.ts         # Root module
-└── main.ts               # Application entry point
-```
 
 ## Code Style
 

@@ -1,10 +1,10 @@
 export interface BulkCreateResponse {
     created: number;
     failed: number;
-    errors: BulkCreateError[];
+    errors: BulkCreationError[];
 }
 
-export interface BulkCreateError {
+export interface BulkCreationError {
     index: number;
     message: string;
 }

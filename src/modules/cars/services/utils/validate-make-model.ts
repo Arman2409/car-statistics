@@ -1,5 +1,5 @@
 import { BadRequestException } from "@nestjs/common";
-import { ValidationCacheKeys } from "@/modules/cars/constants/ValidationCacheKeys";
+import { CacheKeys } from "@/modules/cars/constants/cache";
 import type { ValidateMakeAndModelArgs, ValidateMakeAndModelResult } from "@/modules/cars/types/ValidateMakeAndModelArgs";
 
 // Validates the provided make and model against cached values.
@@ -10,11 +10,12 @@ export const validateMakeAndModel = async (
     make,
     model,
     isUpdate = false,
-  }: ValidateMakeAndModelArgs): Promise<ValidateMakeAndModelResult> => {
+    normalize = true,
+  }: ValidateMakeAndModelArgs): Promise<ValidateMakeAndModelResult|void> => {
   if (!isUpdate && (!make || !model)) throw new BadRequestException('Make and model are required');
 
-  const cachedMakes = await redisService.getClient().get(ValidationCacheKeys.MAKES);
-  const cachedModels = await redisService.getClient().get(ValidationCacheKeys.MODELS);
+  const cachedMakes = await redisService.getClient().get(CacheKeys.MAKES);
+  const cachedModels = await redisService.getClient().get(CacheKeys.MODELS);
 
   if (!cachedMakes || !cachedModels) {
     logger.warn('Car makes/models not found in cache.');
@@ -29,10 +30,12 @@ export const validateMakeAndModel = async (
     throw new BadRequestException(`Invalid car model: ${model}`);
   }
 
-  return {
-    ...(make ? { normalizedMake: normalizeString(make) } : undefined),
-    ...(model ? { normalizedModel: normalizeString(model) } : undefined)
-  };
+  if (normalize) {
+    return {
+      ...(make ? { normalizedMake: normalizeString(make) } : undefined),
+      ...(model ? { normalizedModel: normalizeString(model) } : undefined)
+    };
+  }
 }
 
 function normalizeString(value: string): string {

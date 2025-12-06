@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { BullModule } from '@nestjs/bull';
 import { AppController } from '@/app.controller';
 import { AuthModule } from '@/modules/auth/auth.module';
 import { UsersModule } from '@/modules/users/users.module';
@@ -15,6 +16,14 @@ import { RedisService } from '@/services/redis.service';
     ConfigModule.forRoot({
       isGlobal: true,
       load: [databaseConfig, () => require('./config/external.config').default()],
+    }),
+    BullModule.forRoot({
+      redis: {
+        host: process.env.REDIS_HOST || 'localhost',
+        port: Number(process.env.REDIS_PORT) || 6379,
+        ...(process.env.REDIS_PASSWORD && { password: process.env.REDIS_PASSWORD }),
+        ...(process.env.REDIS_URL && { url: process.env.REDIS_URL }),
+      },
     }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],

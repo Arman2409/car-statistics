@@ -7,6 +7,7 @@ export interface ValidateMakeAndModelArgs {
     make?: string;
     model?: string;
     isUpdate?: boolean;
+    normalize?: boolean;
 }
 
 export interface ValidateMakeAndModelResult {

@@ -6,10 +6,9 @@ import {
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 import { RedisService } from '@/services/redis.service';
-import { ValidationCacheKeys } from '@/modules/cars/constants/ValidationCacheKeys';
-import { FALLBACK_MAKES, FALLBACK_MODELS } from '../constants/fallback-data';
+import { CacheKeys } from '@/modules/cars/constants/cache';
+import { FALLBACK_MAKES, FALLBACK_MODELS } from '@/modules/cars/constants/car-data';
 import { ConfigService } from '@nestjs/config';
-// TODO: Maybe this URL above should no be publicly available?
 
 @Injectable()
 export class MakeSeederService implements OnModuleInit {
@@ -21,7 +20,7 @@ export class MakeSeederService implements OnModuleInit {
       private readonly httpService: HttpService,
       private readonly configService: ConfigService,
   ) {
-    this.apiaryApiUrl = this.configService.get<string>('EXTERNAL_APIARY_URL');
+    this.apiaryApiUrl = this.configService.get<string>('external.external_apiary_url');
   }
 
   async onModuleInit(): Promise<void> {
@@ -30,8 +29,8 @@ export class MakeSeederService implements OnModuleInit {
 
   public async seedMakesAndModelsIfEmpty(): Promise<void> {
     // 1. Idempotency Check: Don't fetch if already in Redis
-    const cachedMakes = await this.redisService.getClient().get(ValidationCacheKeys.MAKES);
-    const cachedModels = await this.redisService.getClient().get(ValidationCacheKeys.MODELS);
+    const cachedMakes = await this.redisService.getClient().get(CacheKeys.MAKES);
+    const cachedModels = await this.redisService.getClient().get(CacheKeys.MODELS);
 
     if (cachedMakes && cachedModels) {
       this.logger.log(`Car makes already cached.`);
@@ -94,8 +93,8 @@ export class MakeSeederService implements OnModuleInit {
     }
 
     // The caching step that makes the app self-sufficient after the first run
-    await this.redisService.getClient().set(ValidationCacheKeys.MAKES, JSON.stringify(makesToCache));
-    await this.redisService.getClient().set(ValidationCacheKeys.MODELS, JSON.stringify(modelToCache));
+    await this.redisService.getClient().set(CacheKeys.MAKES, JSON.stringify(makesToCache));
+    await this.redisService.getClient().set(CacheKeys.MODELS, JSON.stringify(modelToCache));
     this.logger.log(`Car makes and models list successfully stored in Redis.`);
   }
 }

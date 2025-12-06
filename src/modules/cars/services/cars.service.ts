@@ -1,10 +1,17 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { InjectQueue } from '@nestjs/bull';
+import { Queue } from 'bullmq';
 import { Car } from '@/modules/cars/entities/car.entity';
 import { RedisService } from '@/services/redis.service';
 import { validateMakeAndModel } from '@/modules/cars/services/utils/validate-make-model';
 import { calculatePercentageFromGroupedResult, getGroupedCountQuery } from '@/modules/cars/services/utils/get-grouped-count-query';
-import type { BulkCreateResponse } from '@/modules/cars/types/BulkCreateResponse';
+import { getAveragePricePerModelQuery } from '@/modules/cars/services/utils/get-average-price-per-model-query';
+import type { IngestionCarDto } from '@/modules/cars/dto/ingestion-car.dto';
+import { PromiseStatus } from '@/shared/constants/PromiseStatus';
+import { SortOrder } from '@/shared/constants/SortOrder';
+import { ALL_CARS_TTL_SECONDS, CacheKeys } from '@/modules/cars/constants/cache';
+import type { BulkCreateResponse, BulkCreationError } from '@/modules/cars/types/BulkCreateResponse';
 import type { Repository } from 'typeorm';
 import type { CreateCarDto } from '@/modules/cars/dto/create-car.dto';
 import type { UpdateCarDto } from '@/modules/cars/dto/update-car.dto';
@@ -12,12 +19,14 @@ import type { GetPercentageResponse } from '@/modules/cars/types/GetPercentageRe
 import type { GetAveragePricePerModelResponse } from '@/modules/cars/types/GetAveragePricePerModelResponse';
 
 @Injectable()
-export class CarsService {
+export class CarsService {  
   constructor(
     @InjectRepository(Car)
     private carsRepository: Repository<Car>,
     private readonly redisService: RedisService,
     private readonly logger: Logger,
+    @InjectQueue('bulk-create')
+    private bulkCreateQueue: Queue,
   ) { }
 
   async create({ make, model, ...createPayload }: CreateCarDto): Promise<Car> {
@@ -26,7 +35,7 @@ export class CarsService {
       logger: this.logger,
       make,
       model,
-    });
+    }) || {};
 
     const car = this.carsRepository.create({
       ...createPayload,
@@ -38,33 +47,35 @@ export class CarsService {
   }
 
 
-  async bulkCreate(cars: CreateCarDto[]): Promise<BulkCreateResponse> {
+  async bulkCreate(cars: IngestionCarDto[]): Promise<void> {
+    this.logger.log(`Enqueuing bulk create job for ${cars.length} cars`);
+    await this.bulkCreateQueue.add('process-bulk', cars, {
+      attempts: 3,
+      backoff: { type: 'exponential', delay: 2000 },
+    });
+  }
+
+  async processBulkCreate(cars: IngestionCarDto[]): Promise<BulkCreateResponse> {
+    this.logger.log(`Starting bulk create for ${cars.length} cars`);
 
     // Validate all cars in parallel
     const validationResults = await Promise.allSettled(
-      cars.map((car) =>
-        validateMakeAndModel({
+      cars.map((car) => validateMakeAndModel({
           redisService: this.redisService,
           logger: this.logger,
-          make: car.make,
-          model: car.model,
+          make: car.normalizedMake,
+          model: car.normalizedModel,
+          normalize: false,
         })
       )
     );
 
     const carsToInsert: Partial<Car>[] = [];
-    const errors: { index: number; message: string }[] = [];
+    const errors: BulkCreationError[] = [];
 
     validationResults.forEach((result, i) => {
-      if (result.status === 'fulfilled') {
-        const { normalizedMake, normalizedModel } = result.value;
-        const { make, model, ...payload } = cars[i];
-
-        carsToInsert.push({
-          ...payload,
-          normalizedMake,
-          normalizedModel,
-        });
+      if (result.status === PromiseStatus.FULFILLED) {
+        carsToInsert.push(cars[i]);
       } else {
         errors.push({
           index: i,
@@ -82,6 +93,15 @@ export class CarsService {
       }
     }
 
+    // Invalidate cached all-cars list after bulk insert
+    await this.invalidateAllCarsCache();
+
+    this.logger.log({
+      created: carsToInsert.length,
+      failed: errors.length,
+      errors,
+    });
+
     return {
       created: carsToInsert.length,
       failed: errors.length,
@@ -89,11 +109,31 @@ export class CarsService {
     };
   }
 
-
   async findAll(): Promise<Car[]> {
-    return this.carsRepository.find({
-      order: { createdAt: 'DESC' },
-    });
+    const client = this.redisService?.getClient?.();
+    if (client) {
+      try {
+        const cached = await client.get(CacheKeys.ALL_CARS);
+        if (cached) {
+          const parsed: Car[] = JSON.parse(cached) as Car[];
+          return parsed;
+        }
+      } catch (err) {
+        this.logger?.error('Failed reading from Redis cache', err as Error);
+      }
+    }
+
+    const cars = await this.carsRepository.find({ order: { createdAt: SortOrder.DESC } });
+
+    if (client) {
+      try {
+        await client.set(CacheKeys.ALL_CARS, JSON.stringify(cars), 'EX', ALL_CARS_TTL_SECONDS);
+      } catch (err) {
+        this.logger?.warn('Failed to write cars list to Redis cache');
+      }
+    }
+
+    return cars;
   }
 
   async findOne(id: number): Promise<Car | null> {
@@ -112,7 +152,7 @@ export class CarsService {
         model,
         isUpdate: true,
       }
-    );
+    ) || {};
 
     const updateData = {
       ...restOfPayload,
@@ -148,18 +188,8 @@ export class CarsService {
   }
 
   async getAveragePricePerModel(): Promise<GetAveragePricePerModelResponse> {
-    const result = await this.carsRepository
-      .createQueryBuilder('car')
-      .select('car.normalizedMake', 'make')
-      .addSelect('car.normalizedModel', 'model')
-      .addSelect('AVG(car.price)', 'averagePrice')
-      .groupBy('car.normalizedMake')
-      .addGroupBy('car.normalizedModel')
-      .orderBy('make')
-      .addOrderBy('model')
-      .getRawMany();
-
-    return result.map((row) => ({
+    const rows = await getAveragePricePerModelQuery(this.carsRepository);
+    return rows.map((row: any) => ({
       make: row.make,
       model: row.model,
       averagePrice: parseFloat(row.averagePrice),
@@ -194,4 +224,13 @@ export class CarsService {
     }));
   }
 
+  private async invalidateAllCarsCache(): Promise<void> {
+    try {
+      const client = this.redisService?.getClient?.();
+      if (client) await client.del(CacheKeys.ALL_CARS);
+    } catch (err) {
+      this.logger?.warn('Failed to invalidate cars cache');
+    }
+  }
 }
+

@@ -23,8 +23,8 @@ import { CreateCarDto } from '@/modules/cars/dto/create-car.dto';
 import { UpdateCarDto } from '@/modules/cars/dto/update-car.dto';
 import { JwtAuthGuard } from '@/modules/auth/guards/jwt-auth.guard';
 import { Car } from '@/modules/cars/entities/car.entity';
-import { BulkCreateResponse } from './types/BulkCreateResponse';
-import { ApiKeyAuthGuard } from './guards/ApiKeyAuthGuard';
+import { ApiKeyAuthGuard } from '@/modules/cars/guards/ApiKeyAuthGuard';
+import { IngestionCarDto } from '@/modules/cars/dto/ingestion-car.dto';
 
 const swagger = createCarsSwaggerConfig();
 
@@ -32,7 +32,18 @@ const swagger = createCarsSwaggerConfig();
 @ApiBearerAuth()
 @Controller('cars')
 export class CarsController {
-  constructor(private readonly carsService: CarsService) {}
+  constructor(private readonly carsService: CarsService) { }
+
+  @UseGuards(ApiKeyAuthGuard)
+  @Post('bulk')
+  @HttpCode(HttpStatus.ACCEPTED)
+  @ApiOperation(swagger.operations.bulkCreate)
+  @ApiResponse({ status: 202, description: 'Bulk create job accepted for processing' })
+  @ApiResponse(swagger.errors.validationError)
+  @ApiResponse(swagger.errors.unauthorized)
+  async bulkCreate(@Body() cars: IngestionCarDto[]): Promise<void> {
+    return this.carsService.bulkCreate(cars);
+  }
 
   @UseGuards(JwtAuthGuard)
   @Post()
@@ -42,16 +53,6 @@ export class CarsController {
   @ApiResponse(swagger.errors.unauthorized)
   create(@Body() createCarDto: CreateCarDto): Promise<Car> {
     return this.carsService.create(createCarDto);
-  }
-
- @UseGuards(ApiKeyAuthGuard)
-  @Post('bulk')
-  @ApiOperation(swagger.operations.bulkCreate)
-  @ApiResponse(swagger.responses.bulkCreate)
-  @ApiResponse(swagger.errors.validationError)
-  @ApiResponse(swagger.errors.unauthorized)
-  bulkCreate(@Body() cars: CreateCarDto[]): Promise<BulkCreateResponse> {
-    return this.carsService.bulkCreate(cars);
   }
 
   @UseGuards(JwtAuthGuard)
