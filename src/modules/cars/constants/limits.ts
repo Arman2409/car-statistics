@@ -7,7 +7,7 @@ export const RESPONSE_LIMITS = {
 
 export const BULK_SETTINGS = {
   // Max items accepted in a single HTTP request to /cars/bulk
-  MAX_REQUEST_ITEMS: 5000,
+  MAX_REQUEST_ITEMS: 500,
   // Number of items per background DB insert batch
   BATCH_SIZE: 1000,
   // Number of items to group into a single queue job when chunking a large request

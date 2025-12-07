@@ -51,7 +51,7 @@ export class CarsController {
       throw new PayloadTooLargeException(`Bulk request exceeds maximum of ${BULK_SETTINGS.MAX_REQUEST_ITEMS} items`);
     }
 
-    return this.carsService.bulkCreate(cars);
+    this.carsService.bulkCreate(cars);
   }
 
   @UseGuards(JwtAuthGuard)

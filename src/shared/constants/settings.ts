@@ -23,3 +23,5 @@ export const GLOBAL_VALIDATION_SETTINGS = {
     enableImplicitConversion: true,
   },
 };
+
+export const DEFAULT_PORT = 3000;

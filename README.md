@@ -33,7 +33,9 @@ Install and setup PostgreSQL and Redis. Create a PostgreSQL database and a user.
 
 ### 3. Environment Configuration
 
-Create a `.env` file in the root directory:
+Create a `.env` file in the root directory.
+You can check .env.example file for more details.
+For default values you can check ./src/config folder.
 
 ```env
 # Database Configuration
@@ -49,7 +51,7 @@ JWT_EXPIRES_IN=1d
 
 # Redis Configuration
 REDIS_HOST=your-redis-host
-REDIS_PORT=ypur-redis-port
+REDIS_PORT=your-redis-port
 
 # Application Configuration
 PORT=3000
@@ -58,11 +60,14 @@ NODE_ENV=development
 # External API Configuration
 EXTERNAL_APIARY_URL=<your-external-apiary-url>
 INGESTION_API_KEY=<your-ingestion-api-key>
+
+# Application port
+PORT=<your application port>
 ```
 
 ### 4. Run Database Migrations
 
-The application uses TypeORM's `synchronize` option in development mode, which automatically creates/updates database tables. In production, disable this and use migrations instead.
+The application uses TypeORM's `synchronize` option in development mode, which automatically creates/updates database tables.
 
 ### 5. Create Initial User
 
@@ -76,7 +81,7 @@ pnpm run seed:user
 pnpm run seed:user myusername mypassword
 ```
 
-Alternatively, you can create a user directly in the database (password must be hashed using bcrypt) or use the Swagger UI after starting the server.
+Alternatively, you can create a user directly in the database (password must be hashed using bcrypt).
 
 ## Running the Application
 
@@ -93,15 +98,6 @@ pnpm run start
 The application will be available at `http://localhost:3000`  
 Swagger documentation will be available at `http://localhost:3000/api/docs`
 
-### Production Mode
-
-```bash
-# build the application
-pnpm run build
-
-# run in production mode
-pnpm run start:prod
-```
 
 ## API Endpoints
 
@@ -112,7 +108,7 @@ pnpm run start:prod
 ### Cars (Protected - Requires JWT Token)
 
 - `POST /cars` - Create a single car
-- `POST /cars/bulk` - Bulk create cars (this one requires API keyy instead)
+- `POST /cars/bulk` - Bulk create cars (requires x-api-key header)
 - `GET /cars` - List all cars
 - `GET /cars/:id` - Get car by ID
 - `PATCH /cars/:id` - Update car
@@ -126,7 +122,7 @@ pnpm run start:prod
 
 ## Authentication
 
-All `/cars` routes are protected with JWT authentication. To access them:
+All `/cars` routes are protected with JWT authentication (except for /create/bulk). To access them:
 
 1. Login using `POST /auth/login` with username and password
 2. Copy the `access_token` from the response
@@ -147,13 +143,15 @@ curl -X GET http://localhost:3000/cars \
 
 ## Data Ingestion
 
-The application provides a bulk ingestion endpoint at `POST /cars/bulk` that accepts an array of car objects. This endpoint is designed to handle high-volume data (approximately 2000 cars per minute).
+The application provides a bulk ingestion endpoint at `POST /cars/bulk` that accepts an array of car objects. This endpoint is designed to handle high-volume data.
 
 Example request:
 
-```json
-{
-  "cars": [
+```bash
+curl -X POST http://localhost:3000/cars/bulk \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: your-api-key" \
+  -d '[
     {
       "normalizedMake": "toyota",
       "normalizedModel": "corolla",
@@ -168,8 +166,7 @@ Example request:
       "price": 35000,
       "location": "Los Angeles, CA"
     }
-  ]
-}
+  ]'
 ```
 
 ### Integration with Data Seeder
@@ -188,22 +185,7 @@ To integrate with the AMA-task-data-seeder project:
 ```bash
 # run unit tests
 pnpm run test
-
-# run tests in watch mode
-pnpm run test:watch
-
-# run tests with coverage
-pnpm run test:cov
 ```
-
-### E2E Tests
-
-```bash
-# run e2e tests
-pnpm run test:e2e
-```
-
-**Note:** E2E tests require a running PostgreSQL database. Make sure your `.env` file is configured correctly.
 
 ## Code Style
 
@@ -243,8 +225,6 @@ Example validation errors:
 
 - The bulk ingestion endpoint uses batch inserts for optimal performance
 - Database indexes are created on `(normalizedMake, normalizedModel)` for faster statistics queries
-- Consider using connection pooling in production
-- For very high loads, consider implementing a message queue (RabbitMQ, Kafka) instead of direct HTTP
 
 ## Troubleshooting
 
@@ -265,6 +245,3 @@ Example validation errors:
 - Change `PORT` in `.env` file
 - Or kill the process using the port: `lsof -ti:3000 | xargs kill`
 
-## License
-
-MIT

@@ -6,7 +6,9 @@ import {
   SWAGGER_SETTINGS,
   GLOBAL_VALIDATION_SETTINGS,
   SwaggerSetupDetails,
+  DEFAULT_PORT,
 } from '@/shared/constants/settings';
+import { ConfigService } from '@nestjs/config';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -25,7 +27,11 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document);
 
-  const port = process.env.PORT || 3000;
+  const configService = app.get(ConfigService);  
+  const port = configService.get<number>('app.port') || DEFAULT_PORT;
+
+  console.log(port);
+
   await app.listen(port);
 
   const logger = new Logger('Bootstrap');
