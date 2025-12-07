@@ -2,16 +2,19 @@ import { CarsService } from '@/modules/cars/services/cars.service';
 import { Logger } from '@nestjs/common';
 import { BULK_SETTINGS } from '@/modules/cars/constants/limits';
 import type { Car } from '@/modules/cars/entities/car.entity';
+import type { Repository } from 'typeorm';
+import type { RedisService } from '@/modules/redis/redis.service';
+import type { Queue } from 'bullmq';
 
 describe('CarsService bulkCreate', () => {
   let service: CarsService;
-  const mockRepo = {} as any;
-  const mockRedis = {} as any;
+  const mockRepo = {};
+  const mockRedis = {};
   const mockLogger = new Logger();
 
   it('enqueues single job when payload <= JOB_CHUNK_SIZE', async () => {
-    const mockQueue = { add: jest.fn().mockResolvedValue(undefined) } as any;
-    service = new CarsService(mockRepo, mockRedis, mockLogger, mockQueue);
+    const mockQueue = { add: jest.fn().mockResolvedValue(undefined) };
+    service = new CarsService(mockRepo as Repository<Car>, mockRedis as RedisService, mockLogger, mockQueue as unknown as Queue);
 
     const payload: Partial<Car>[] = Array.from({ length: BULK_SETTINGS.JOB_CHUNK_SIZE }).map(() => ({ normalizedMake: 'x' } as Partial<Car>));
 
@@ -22,8 +25,8 @@ describe('CarsService bulkCreate', () => {
   });
 
   it('enqueues multiple jobs when payload > JOB_CHUNK_SIZE', async () => {
-    const mockQueue = { add: jest.fn().mockResolvedValue(undefined) } as any;
-    service = new CarsService(mockRepo, mockRedis, mockLogger, mockQueue);
+    const mockQueue = { add: jest.fn().mockResolvedValue(undefined) };
+    service = new CarsService(mockRepo as Repository<Car>, mockRedis as RedisService, mockLogger, mockQueue as unknown as Queue);
 
     const total = BULK_SETTINGS.JOB_CHUNK_SIZE * 2 + 10;
     const payload: Partial<Car>[] = Array.from({ length: total }).map(() => ({ normalizedMake: 'x' } as Partial<Car>));

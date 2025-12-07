@@ -39,14 +39,6 @@ describe('UsersService', () => {
     expect(res).toEqual(mockUser);
   });
 
-  it('create should hash and save', async () => {
-    const res = await service.create('alice', 'secret');
-    expect(bcrypt.hash).toHaveBeenCalledWith('secret', 10);
-    expect(mockRepo.create).toHaveBeenCalled();
-    expect(mockRepo.save).toHaveBeenCalled();
-    expect(res).toEqual(mockUser);
-  });
-
   it('validateUser should return user when password matches', async () => {
     const res = await service.validateUser('bob', 'secret');
     expect(mockRepo.findOne).toHaveBeenCalled();

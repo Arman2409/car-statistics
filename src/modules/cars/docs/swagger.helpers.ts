@@ -9,8 +9,8 @@ export function createSwaggerOperation(summary: SwaggerOperation): ApiOperationO
 export function createSwaggerResponse(
   status: HttpStatus,
   description: SwaggerDescription | string,
-  type?: any,
-  schema?: any,
+  type?: Function,
+  schema?: object,
 ): ApiResponseOptions {
   const response: ApiResponseOptions = {
     status,
@@ -22,7 +22,7 @@ export function createSwaggerResponse(
   }
 
   if (schema) {
-    (response as any).schema = schema;
+    (response as {schema: unknown}).schema = schema;
   }
 
   return response;
@@ -41,12 +41,12 @@ export function createErrorResponse(
 export function createArrayResponse(
   status: HttpStatus,
   description: SwaggerDescription | string,
-  itemType: any,
+  itemType: Function,
 ): ApiResponseOptions {
   return {
     status,
     description,
-    type: ([itemType] as unknown) as [typeof itemType],
+    type: [itemType] as [typeof itemType],
   };
 }
 

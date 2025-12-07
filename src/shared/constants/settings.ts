@@ -25,3 +25,5 @@ export const GLOBAL_VALIDATION_SETTINGS = {
 };
 
 export const DEFAULT_PORT = 3000;
+
+export const BCRYPT_SALT_ROUNDS = 10;

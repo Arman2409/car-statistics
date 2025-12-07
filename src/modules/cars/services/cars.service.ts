@@ -17,7 +17,7 @@ import type { Repository } from 'typeorm';
 import type { CreateCarDto } from '@/modules/cars/dto/create-car.dto';
 import type { UpdateCarDto } from '@/modules/cars/dto/update-car.dto';
 import type { GetPercentageResponse } from '@/modules/cars/types/GetPercentageResponse';
-import type { GetAveragePricePerModelResponse } from '@/modules/cars/types/GetAveragePricePerModelResponse';
+import type { AveragePriceItem, GetAveragePricePerModelResponse } from '@/modules/cars/types/GetAveragePricePerModelResponse';
 
 @Injectable()
 export class CarsService {  
@@ -150,10 +150,10 @@ export class CarsService {
 
   async getAveragePricePerModel(): Promise<GetAveragePricePerModelResponse> {
     const rows = await getAveragePricePerModelQuery(this.carsRepository);
-    const mappedRows = rows.map((row: any) => ({
+    const mappedRows = rows.map((row: AveragePriceItem) => ({
       make: row.make,
       model: row.model,
-      averagePrice: Math.round(parseFloat(row.averagePrice)),
+      averagePrice: Math.round(parseFloat(Number(row.averagePrice).toString())),
     }));
 
     return mappedRows.slice(0, RESPONSE_LIMITS.AVERAGE_PRICE_PER_MODEL);

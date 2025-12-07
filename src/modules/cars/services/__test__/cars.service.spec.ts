@@ -2,6 +2,10 @@ import { CarsService } from '@/modules/cars/services/cars.service';
 import { CacheKeys } from '@/modules/cars/constants/cache';
 import type { Car } from '@/modules/cars/entities/car.entity';
 import type { CreateCarDto } from '@/modules/cars/dto/create-car.dto';
+import type { Queue } from 'bullmq';
+import type { Repository } from 'typeorm';
+import type { RedisService } from '@/modules/redis/redis.service';
+import type { Logger } from '@nestjs/common';
 
 jest.mock('@/modules/cars/services/utils/validate-make-model', () => ({
 	validateMakeAndModel: jest.fn().mockResolvedValue({ normalizedMake: 'toyota', normalizedModel: 'corolla' }),
@@ -10,7 +14,7 @@ jest.mock('@/modules/cars/services/utils/validate-make-model', () => ({
 describe('CarsService', () => {
 	let service: CarsService;
 
-	const mockRepo: Partial<Record<string, jest.Mock>> = {
+	const mockRepo = {
 		create: jest.fn(),
 		save: jest.fn(),
 		find: jest.fn(),
@@ -18,16 +22,15 @@ describe('CarsService', () => {
 		update: jest.fn(),
 		delete: jest.fn(),
 		insert: jest.fn(),
-	};
+	} as unknown as Repository<Car>;
 
 	const mockRedisClient = { get: jest.fn(), set: jest.fn(), del: jest.fn() };
-	const mockRedisService = { getClient: () => mockRedisClient };
-	const mockLogger = { warn: jest.fn(), log: jest.fn(), error: jest.fn() } as any;
-	const mockQueue = { add: jest.fn() } as any;
+	const mockRedisService = { getClient: () => mockRedisClient } as unknown as RedisService;
+	const mockLogger = { warn: jest.fn(), log: jest.fn(), error: jest.fn() } as unknown as Logger;
+	const mockQueue = { add: jest.fn() } as unknown as Queue;
 
 	beforeEach(() => {
-		// instantiate directly to avoid DI complexity in tests
-		service = new CarsService(mockRepo as any, mockRedisService as any, mockLogger, mockQueue);
+		service = new CarsService(mockRepo , mockRedisService, mockLogger, mockQueue);
 		jest.clearAllMocks();
 	});
 
