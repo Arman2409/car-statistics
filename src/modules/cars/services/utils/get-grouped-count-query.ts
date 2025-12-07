@@ -20,7 +20,7 @@ export async function getGroupedCountQuery(
     .addSelect('COUNT(*)', 'count')
     .groupBy(`car.${columnName}`)
     .orderBy('count', 'DESC')
-    .getRawMany() as Promise<GroupedCountResult[]>;
+    .getRawMany();
 }
 
 /**

@@ -8,7 +8,7 @@ export class RedisService implements OnModuleDestroy {
   private connected: boolean = false;
 
   constructor(private readonly logger: Logger) {
-    if(this.client                           ) {
+    if (this.client) {
       this.logger.warn('🔌 Redis client already initialized');
     }
 
@@ -25,7 +25,6 @@ export class RedisService implements OnModuleDestroy {
     this.client.on('error', (err) => {
       this.logger.error(`❌ Redis error: ${err.message}`);
     });
-
   }
 
   /** Return underlying Redis client (singleton instance) */
@@ -42,7 +41,10 @@ export class RedisService implements OnModuleDestroy {
       await this.client.del(key);
       this.logger.log(`Cache key invalidated: ${key}`);
     } catch (err) {
-      this.logger.warn(`Failed to invalidate cache key: ${key}`, err instanceof Error ? err.message : String(err));
+      this.logger.warn(
+        `Failed to invalidate cache key: ${key}`,
+        err instanceof Error ? err.message : String(err),
+      );
     }
   }
 

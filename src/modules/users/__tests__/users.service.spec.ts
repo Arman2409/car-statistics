@@ -1,7 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { UsersService } from '@/modules/users/users.service';
 import * as bcrypt from 'bcrypt';
-import { mockUser, createMockUsersRepository } from '@/modules/users/__mocks__/users.mocks';
+import {
+  mockUser,
+  createMockUsersRepository,
+} from '@/modules/users/__mocks__/users.mocks';
 
 jest.mock('bcrypt', () => ({
   hash: jest.fn(async () => 'hashedpw'),
@@ -35,7 +38,9 @@ describe('UsersService', () => {
 
   it('findByUsername should call repo', async () => {
     const res = await service.findByUsername('bob');
-    expect(mockRepo.findOne).toHaveBeenCalledWith({ where: { username: 'bob' } });
+    expect(mockRepo.findOne).toHaveBeenCalledWith({
+      where: { username: 'bob' },
+    });
     expect(res).toEqual(mockUser);
   });
 

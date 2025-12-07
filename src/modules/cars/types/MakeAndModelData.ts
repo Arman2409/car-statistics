@@ -1,4 +1,4 @@
 export interface MakeAndModelData {
-    make: string;
-    model: string;
+  make: string;
+  model: string;
 }

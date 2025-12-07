@@ -10,7 +10,7 @@ export const mockUser: User = {
 
 export const createMockUsersRepository = () => ({
   findOne: jest.fn().mockResolvedValue(mockUser),
-  create: jest.fn().mockImplementation((u) => u),
+  create: jest.fn().mockImplementation((u: User) => u),
   save: jest.fn().mockResolvedValue(mockUser),
 });
 

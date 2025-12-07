@@ -12,4 +12,4 @@ export const createQuestion = (query: string): Promise<string> => {
       resolve(answer);
     });
   });
-}
+};

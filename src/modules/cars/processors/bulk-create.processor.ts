@@ -7,7 +7,10 @@ import { RedisService } from '@/modules/redis/redis.service';
 import { validateMakeAndModel } from '@/modules/cars/services/utils/validate-make-model';
 import { PromiseStatus } from '@/shared/constants/PromiseStatus';
 import { CacheKeys } from '@/modules/cars/constants/cache';
-import type { BulkCreateResponse, BulkCreationError } from '@/modules/cars/types/BulkCreateResponse';
+import type {
+  BulkCreateResponse,
+  BulkCreationError,
+} from '@/modules/cars/types/BulkCreateResponse';
 import type { Repository } from 'typeorm';
 
 export const BULK_CREATE_QUEUE = 'bulk-create';
@@ -21,12 +24,16 @@ export class BulkCreateProcessor {
     @InjectRepository(Car)
     private carsRepository: Repository<Car>,
     private readonly redisService: RedisService,
-  ) { }
+  ) {}
 
   @Process(BULK_CREATION_OPERATION)
-  async handleBulkCreate(job: Job<Partial<Car>[]>): Promise<BulkCreateResponse> {
+  async handleBulkCreate(
+    job: Job<Partial<Car>[]>,
+  ): Promise<BulkCreateResponse> {
     try {
-      this.logger.log(`Processing bulk create job ${job.id} with ${job.data.length} cars`);
+      this.logger.log(
+        `Processing bulk create job ${job.id} with ${job.data.length} cars`,
+      );
       const result = await this.processBulkCreate(job.data);
       this.logger.log(
         `Completed bulk create job ${job.id}: ${result.created} created, ${result.failed} failed`,
@@ -41,7 +48,9 @@ export class BulkCreateProcessor {
     }
   }
 
-  private async processBulkCreate(cars: Partial<Car>[]): Promise<BulkCreateResponse> {
+  private async processBulkCreate(
+    cars: Partial<Car>[],
+  ): Promise<BulkCreateResponse> {
     this.logger.log(`Starting bulk create for ${cars.length} cars`);
 
     // Validate all cars in parallel
@@ -61,12 +70,12 @@ export class BulkCreateProcessor {
     const errors: BulkCreationError[] = [];
 
     validationResults.forEach((result, i) => {
-      if (result.status === PromiseStatus.FULFILLED) {
+      if ((result.status as PromiseStatus) === PromiseStatus.FULFILLED) {
         carsToInsert.push(cars[i]);
       } else {
         errors.push({
           index: i,
-          message: (result.reason as Error).message,
+          message: (result as { reason: Error }).reason.message,
         });
       }
     });
@@ -89,11 +98,12 @@ export class BulkCreateProcessor {
       errors,
     };
 
-    this.logger.log(`Finished bulk create operation, ${JSON.stringify({
-      created: carsToInsert.length,
-      failed: errors.length,
-      errors,
-    })}`
+    this.logger.log(
+      `Finished bulk create operation, ${JSON.stringify({
+        created: carsToInsert.length,
+        failed: errors.length,
+        errors,
+      })}`,
     );
 
     return operationResult;

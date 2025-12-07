@@ -35,4 +35,10 @@ export class Car {
   updatedAt: Date;
 }
 
-export const CAR_PUBLIC_FIELDS: (keyof Car)[] = [ 'normalizedMake', 'normalizedModel', 'year', 'price', 'createdAt']
+export const CAR_PUBLIC_FIELDS: (keyof Car)[] = [
+  'normalizedMake',
+  'normalizedModel',
+  'year',
+  'price',
+  'createdAt',
+];

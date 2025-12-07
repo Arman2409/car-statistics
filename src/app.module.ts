@@ -65,6 +65,4 @@ import { RedisModule } from '@/modules/redis/redis.module';
     },
   ],
 })
-
 export class AppModule {}
-

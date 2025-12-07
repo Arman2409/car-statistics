@@ -6,14 +6,8 @@ import {
   PRICE_API,
   LOCATION_API,
 } from '@/modules/cars/docs/create-car.docs';
-import {
-  IsString,
-  IsNotEmpty,
-  IsInt,
-  Min,
-  Max,
-} from 'class-validator';
- 
+import { IsString, IsNotEmpty, IsInt, Min, Max } from 'class-validator';
+
 export class CreateCarDto {
   @ApiProperty(MAKE_API)
   @IsString()

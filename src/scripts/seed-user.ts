@@ -2,7 +2,7 @@ import { DataSource, DataSourceOptions } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { User } from '@/modules/users/entities/user.entity';
 import databaseConfig from '@/config/database.config';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ConfigModule } from '@nestjs/config';
 import { BCRYPT_SALT_ROUNDS } from '@/shared/constants/settings';
 import { createQuestion } from '@/scripts/utils/create-question';
 
@@ -11,12 +11,14 @@ const DEFAULT_PASSWORD = 'admin123';
 
 async function seedUser() {
   // Extract config service from ConfigModule
-  const configModule =  ConfigModule.forRoot({
+  const configModule = ConfigModule.forRoot({
     load: [databaseConfig],
   });
 
   const configProviders = (await configModule)?.providers;
-  const configService = (configProviders as  Array<{useFactory: () => DataSourceOptions}>)[0];
+  const configService = (
+    configProviders as Array<{ useFactory: () => DataSourceOptions }>
+  )[0];
 
   // Get database configuration
   const databaseSetupConfig = configService.useFactory();

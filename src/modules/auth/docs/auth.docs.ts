@@ -1,4 +1,4 @@
-import { HttpStatus } from "@nestjs/common";
+import { HttpStatus } from '@nestjs/common';
 
 export const AUTH_TAG = 'Authentication';
 
@@ -16,4 +16,9 @@ export const LOGIN_RESPONSE = {
       },
     },
   },
+};
+
+export const LOGIN_UNAUTHORIZED_RESPONSE = {
+  status: HttpStatus.UNAUTHORIZED,
+  description: 'Invalid credentials provided',
 };

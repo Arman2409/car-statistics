@@ -27,10 +27,8 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document);
 
-  const configService = app.get(ConfigService);  
+  const configService = app.get(ConfigService);
   const port = configService.get<number>('app.port') || DEFAULT_PORT;
-
-  console.log(port);
 
   await app.listen(port);
 
@@ -43,6 +41,5 @@ async function bootstrap() {
     `Swagger documentation: ${process.env.NODE_ENV === 'development' ? `${process.env.DEV_HOSTNAME}:${port}` : 'By endpoint '}/api/docs`,
   );
 }
-
 
 bootstrap();

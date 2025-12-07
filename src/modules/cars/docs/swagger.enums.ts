@@ -1,4 +1,3 @@
-
 export enum SwaggerErrorType {
   VALIDATION_ERROR = 'Validation error',
   UNAUTHORIZED = 'Unauthorized',
@@ -28,4 +27,3 @@ export enum SwaggerDescription {
   MAKE_PERCENTAGE = 'Percentage distribution per make',
   MODEL_PERCENTAGE = 'Percentage distribution per model',
 }
-

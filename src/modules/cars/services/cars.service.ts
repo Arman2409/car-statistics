@@ -6,21 +6,33 @@ import { Car, CAR_PUBLIC_FIELDS } from '@/modules/cars/entities/car.entity';
 import { RedisService } from '@/modules/redis/redis.service';
 import { getAveragePricePerModelQuery } from './utils/get-average-price-per-model-query';
 import { validateMakeAndModel } from '@/modules/cars/services/utils/validate-make-model';
-import { calculatePercentageFromGroupedResult, getGroupedCountQuery } from '@/modules/cars/services/utils/get-grouped-count-query';
+import {
+  calculatePercentageFromGroupedResult,
+  getGroupedCountQuery,
+} from '@/modules/cars/services/utils/get-grouped-count-query';
 import { SortOrder } from '@/shared/constants/SortOrder';
-import { ALL_CARS_TTL_SECONDS, CacheKeys } from '@/modules/cars/constants/cache';
+import {
+  ALL_CARS_TTL_SECONDS,
+  CacheKeys,
+} from '@/modules/cars/constants/cache';
 import { RESPONSE_LIMITS } from '@/modules/cars/constants/limits';
-import { BULK_CREATE_QUEUE, BULK_CREATION_OPERATION } from '@/modules/cars/processors/bulk-create.processor';
+import {
+  BULK_CREATE_QUEUE,
+  BULK_CREATION_OPERATION,
+} from '@/modules/cars/processors/bulk-create.processor';
 import { BULK_SETTINGS } from '@/modules/cars/constants/limits';
 import { BULK_JOB_OPTIONS } from '@/modules/cars/constants/queue';
 import type { Repository } from 'typeorm';
 import type { CreateCarDto } from '@/modules/cars/dto/create-car.dto';
 import type { UpdateCarDto } from '@/modules/cars/dto/update-car.dto';
 import type { GetPercentageResponse } from '@/modules/cars/types/GetPercentageResponse';
-import type { AveragePriceItem, GetAveragePricePerModelResponse } from '@/modules/cars/types/GetAveragePricePerModelResponse';
+import type {
+  AveragePriceItem,
+  GetAveragePricePerModelResponse,
+} from '@/modules/cars/types/GetAveragePricePerModelResponse';
 
 @Injectable()
-export class CarsService {  
+export class CarsService {
   constructor(
     @InjectRepository(Car)
     private carsRepository: Repository<Car>,
@@ -28,15 +40,16 @@ export class CarsService {
     private readonly logger: Logger,
     @InjectQueue(BULK_CREATE_QUEUE)
     private bulkCreateQueue: Queue,
-  ) { }
+  ) {}
 
   async create({ make, model, ...createPayload }: CreateCarDto): Promise<Car> {
-    const { normalizedMake, normalizedModel } = await validateMakeAndModel({
-      redisService: this.redisService,
-      logger: this.logger,
-      make,
-      model,
-    }) || {};
+    const { normalizedMake, normalizedModel } =
+      (await validateMakeAndModel({
+        redisService: this.redisService,
+        logger: this.logger,
+        make,
+        model,
+      })) || {};
 
     const car = this.carsRepository.create({
       ...createPayload,
@@ -47,7 +60,6 @@ export class CarsService {
     return this.carsRepository.save(car);
   }
 
-
   async bulkCreate(cars: Partial<Car>[]): Promise<void> {
     this.logger.log(`Enqueuing bulk create job for ${cars.length} cars`);
 
@@ -55,14 +67,22 @@ export class CarsService {
 
     // If payload is small enough, enqueue as a single job
     if (cars.length <= jobChunkSize) {
-      await this.bulkCreateQueue.add(BULK_CREATION_OPERATION, cars, BULK_JOB_OPTIONS);
+      await this.bulkCreateQueue.add(
+        BULK_CREATION_OPERATION,
+        cars,
+        BULK_JOB_OPTIONS,
+      );
       return;
     }
 
     // For larger payloads, split into chunks and enqueue each chunk separately
     for (let i = 0; i < cars.length; i += jobChunkSize) {
       const chunk = cars.slice(i, i + jobChunkSize);
-      await this.bulkCreateQueue.add(BULK_CREATION_OPERATION, chunk, BULK_JOB_OPTIONS);
+      await this.bulkCreateQueue.add(
+        BULK_CREATION_OPERATION,
+        chunk,
+        BULK_JOB_OPTIONS,
+      );
     }
   }
 
@@ -76,7 +96,10 @@ export class CarsService {
           return JSON.parse(cached) as Car[];
         }
       } catch (err) {
-        this.logger?.error('Failed reading from Redis cache, continuing', err as Error);
+        this.logger?.error(
+          'Failed reading from Redis cache, continuing',
+          err as Error,
+        );
       }
     }
 
@@ -88,9 +111,14 @@ export class CarsService {
 
     if (client) {
       try {
-        await client.set(CacheKeys.ALL_CARS, JSON.stringify(cars), 'EX', ALL_CARS_TTL_SECONDS);
+        await client.set(
+          CacheKeys.ALL_CARS,
+          JSON.stringify(cars),
+          'EX',
+          ALL_CARS_TTL_SECONDS,
+        );
       } catch (err) {
-        this.logger?.error('Failed to write cars list to Redis cache');
+        this.logger?.error('Failed to write cars list to Redis cache', err);
       }
     }
 
@@ -98,22 +126,24 @@ export class CarsService {
   }
 
   async findOne(id: number): Promise<Car | null> {
-    return this.carsRepository.findOne({ where: { id }, select: CAR_PUBLIC_FIELDS });
+    return this.carsRepository.findOne({
+      where: { id },
+      select: CAR_PUBLIC_FIELDS,
+    });
   }
 
   async update(id: number, updatePayload: UpdateCarDto): Promise<Partial<Car>> {
     const { make, model, ...restOfPayload } = updatePayload;
 
     // Perform validation and normalization using the extracted raw fields
-    const { normalizedMake, normalizedModel } = await validateMakeAndModel(
-      {
+    const { normalizedMake, normalizedModel } =
+      (await validateMakeAndModel({
         redisService: this.redisService,
         logger: this.logger,
         make,
         model,
         isUpdate: true,
-      }
-    ) || {};
+      })) || {};
 
     const updateData = {
       ...restOfPayload,
@@ -132,7 +162,7 @@ export class CarsService {
       ...restOfPayload,
       ...(normalizedMake ? { normalizedMake } : {}),
       ...(normalizedModel ? { normalizedModel } : {}),
-    }
+    };
 
     return updatedFields;
   }
@@ -166,7 +196,7 @@ export class CarsService {
     );
 
     const results = calculatePercentageFromGroupedResult(groupedCounts);
-    const mappedResults = results.map(row => ({
+    const mappedResults = results.map((row) => ({
       make: row.group,
       percentage: row.percentage,
     }));
@@ -181,7 +211,7 @@ export class CarsService {
     );
 
     const results = calculatePercentageFromGroupedResult(groupedCounts);
-    const mappedResults = results.map(row => ({
+    const mappedResults = results.map((row) => ({
       model: row.group,
       percentage: row.percentage,
     }));

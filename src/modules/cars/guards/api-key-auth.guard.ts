@@ -18,17 +18,19 @@ export class ApiKeyAuthGuard implements CanActivate {
 
   constructor(private readonly configService: ConfigService) {
     // Read the secure key from the environment during Guard initialization
-    this.requiredApiKey = this.configService.get<string>('external.ingestion_api_key');
-    
+    this.requiredApiKey = this.configService.get<string>(
+      'external.ingestion_api_key',
+    );
+
     if (!this.requiredApiKey) {
-        // This is a safety check for development setup errors;
-        throw new Error('INGESTION_API_KEY is not defined in the environment.');
+      // This is a safety check for development setup errors;
+      throw new Error('INGESTION_API_KEY is not defined in the environment.');
     }
   }
 
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest<Request>();
-    
+
     // 1. Extract the API key from the request header
     const apiKey = request.headers[API_KEY_HEADER];
 

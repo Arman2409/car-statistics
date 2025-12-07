@@ -5,7 +5,12 @@ import { CreateCarDto } from '@/modules/cars/dto/create-car.dto';
 import { ApiKeyAuthGuard } from '@/modules/cars/guards/api-key-auth.guard';
 import { JwtAuthGuard } from '@/modules/cars/guards/jwt-auth.guard';
 import { ConfigService } from '@nestjs/config';
-import { mockCar, createMockCarsService, createMockGuards, createMockConfigService } from '@/modules/cars/__mocks__/cars.mocks';
+import {
+  mockCar,
+  createMockCarsService,
+  createMockGuards,
+  createMockConfigService,
+} from '@/modules/cars/__mocks__/cars.mocks';
 import { BULK_SETTINGS } from '@/modules/cars/constants/limits';
 import type { Car } from '@/modules/cars/entities/car.entity';
 import type { UpdateCarDto } from '@/modules/cars/dto/update-car.dto';
@@ -37,9 +42,9 @@ describe('CarsController', () => {
           useValue: mockGuards.JwtAuthGuard,
         },
         {
-            provide: ConfigService,
-            useValue: mockConfigService,
-        }
+          provide: ConfigService,
+          useValue: mockConfigService,
+        },
       ],
     }).compile();
 
@@ -59,13 +64,21 @@ describe('CarsController', () => {
 
   it('bulkCreate() should return 413 when request too large', async () => {
     const max = BULK_SETTINGS.MAX_REQUEST_ITEMS;
-    const payload = Array.from({ length: max + 1 }).map(() => ({ normalizedMake: 'x' } as Partial<Car>));
+    const payload = Array.from({ length: max + 1 }).map(
+      () => ({ normalizedMake: 'x' }) as Partial<Car>,
+    );
 
     await expect(controller.bulkCreate(payload)).rejects.toThrow();
   });
 
   it('create() should create a car', async () => {
-    const dto: CreateCarDto = { make: 'Toyota', model: 'Corolla', year: 2020, price: 10000, location: 'NY' };
+    const dto: CreateCarDto = {
+      make: 'Toyota',
+      model: 'Corolla',
+      year: 2020,
+      price: 10000,
+      location: 'NY',
+    };
 
     const res = await controller.create(dto);
 
@@ -104,7 +117,9 @@ describe('CarsController', () => {
     const avg = await controller.getAveragePricePerModel();
 
     expect(mockService.getAveragePricePerModel).toHaveBeenCalled();
-    expect(avg).toEqual([{ make: 'toyota', model: 'corolla', averagePrice: 10000 }]);
+    expect(avg).toEqual([
+      { make: 'toyota', model: 'corolla', averagePrice: 10000 },
+    ]);
 
     const makePct = await controller.getMakePercentage();
 

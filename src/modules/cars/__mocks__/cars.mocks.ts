@@ -18,9 +18,17 @@ export const createMockCarsService = () => ({
   findOne: jest.fn().mockResolvedValue(mockCar),
   update: jest.fn().mockResolvedValue({ price: 12000 }),
   remove: jest.fn().mockResolvedValue(undefined),
-  getAveragePricePerModel: jest.fn().mockResolvedValue([{ make: 'toyota', model: 'corolla', averagePrice: 10000 }]),
-  getMakePercentage: jest.fn().mockResolvedValue([{ make: 'toyota', percentage: 100 }]),
-  getModelPercentage: jest.fn().mockResolvedValue([{ model: 'corolla', percentage: 100 }]),
+  getAveragePricePerModel: jest
+    .fn()
+    .mockResolvedValue([
+      { make: 'toyota', model: 'corolla', averagePrice: 10000 },
+    ]),
+  getMakePercentage: jest
+    .fn()
+    .mockResolvedValue([{ make: 'toyota', percentage: 100 }]),
+  getModelPercentage: jest
+    .fn()
+    .mockResolvedValue([{ model: 'corolla', percentage: 100 }]),
 });
 
 export const createMockGuards = () => ({

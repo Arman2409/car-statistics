@@ -17,8 +17,12 @@ import {
   ApiOperation,
   ApiResponse,
   ApiBearerAuth,
+  ApiBody,
 } from '@nestjs/swagger';
-import { CARS_TAG, createCarsSwaggerConfig } from '@/modules/cars/docs/cars-swagger.config';
+import {
+  CARS_TAG,
+  createCarsSwaggerConfig,
+} from '@/modules/cars/docs/cars-swagger.config';
 import { THROTTLE_SETTINGS } from '@/modules/cars/constants/throttle';
 import { CarsService } from '@/modules/cars/services/cars.service';
 import { CreateCarDto } from '@/modules/cars/dto/create-car.dto';
@@ -35,7 +39,7 @@ const swagger = createCarsSwaggerConfig();
 @ApiBearerAuth()
 @Controller('cars')
 export class CarsController {
-  constructor(private readonly carsService: CarsService) { }
+  constructor(private readonly carsService: CarsService) {}
 
   @UseGuards(ApiKeyAuthGuard)
   @Post('bulk')
@@ -45,10 +49,13 @@ export class CarsController {
   @ApiResponse(swagger.responses.bulkCreate)
   @ApiResponse(swagger.errors.validationError)
   @ApiResponse(swagger.errors.unauthorized)
+  @ApiBody(swagger.bodies.bulkCreate)
   async bulkCreate(@Body() cars: Partial<Car>[]): Promise<void> {
     // Protect from overly large single requests at the controller level
     if (cars.length > BULK_SETTINGS.MAX_REQUEST_ITEMS) {
-      throw new PayloadTooLargeException(`Bulk request exceeds maximum of ${BULK_SETTINGS.MAX_REQUEST_ITEMS} items`);
+      throw new PayloadTooLargeException(
+        `Bulk request exceeds maximum of ${BULK_SETTINGS.MAX_REQUEST_ITEMS} items`,
+      );
     }
 
     this.carsService.bulkCreate(cars);
@@ -60,6 +67,7 @@ export class CarsController {
   @ApiResponse(swagger.responses.create)
   @ApiResponse(swagger.errors.validationError)
   @ApiResponse(swagger.errors.unauthorized)
+  @ApiBody(swagger.bodies.create)
   create(@Body() createCarDto: CreateCarDto): Promise<Car> {
     return this.carsService.create(createCarDto);
   }
@@ -89,6 +97,7 @@ export class CarsController {
   @ApiOperation(swagger.operations.update)
   @ApiResponse(swagger.responses.update)
   @ApiResponse(swagger.errors.notFound)
+  @ApiBody(swagger.bodies.update)
   @ApiResponse(swagger.errors.validationError)
   @ApiResponse(swagger.errors.unauthorized)
   update(

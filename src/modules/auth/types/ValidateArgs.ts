@@ -1,4 +1,4 @@
-export interface ValidateArgs { 
-    sub: number; 
-    username: string 
+export interface ValidateArgs {
+  sub: number;
+  username: string;
 }

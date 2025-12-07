@@ -28,7 +28,6 @@ describe('AuthController', () => {
   });
 
   it('login() should return an access token', async () => {
-
     const dto = { username: 'alice', password: 'secret' };
 
     const res = await controller.login(dto);

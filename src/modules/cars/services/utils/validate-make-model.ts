@@ -1,28 +1,33 @@
-import { BadRequestException } from "@nestjs/common";
-import { CacheKeys } from "@/modules/cars/constants/cache";
-import type { ValidateMakeAndModelArgs, ValidateMakeAndModelResult } from "@/modules/cars/types/ValidateMakeAndModelArgs";
+import { BadRequestException } from '@nestjs/common';
+import { CacheKeys } from '@/modules/cars/constants/cache';
+import type {
+  ValidateMakeAndModelArgs,
+  ValidateMakeAndModelResult,
+} from '@/modules/cars/types/ValidateMakeAndModelArgs';
 
 // Validates the provided make and model against cached values.
-export const validateMakeAndModel = async (
-  {
-    redisService,
-    logger,
-    make,
-    model,
-    isUpdate = false,
-    normalize = true,
-  }: ValidateMakeAndModelArgs): Promise<ValidateMakeAndModelResult|void> => {
-  if (!isUpdate && (!make || !model)) throw new BadRequestException('Make and model are required');
+export const validateMakeAndModel = async ({
+  redisService,
+  logger,
+  make,
+  model,
+  isUpdate = false,
+  normalize = true,
+}: ValidateMakeAndModelArgs): Promise<ValidateMakeAndModelResult | void> => {
+  if (!isUpdate && (!make || !model))
+    throw new BadRequestException('Make and model are required');
 
-  let cachedMakes = await redisService.getClient().get(CacheKeys.MAKES);
-  let cachedModels = await redisService.getClient().get(CacheKeys.MODELS);
+  const cachedMakes = await redisService.getClient().get(CacheKeys.MAKES);
+  const cachedModels = await redisService.getClient().get(CacheKeys.MODELS);
 
   if (!cachedMakes || !cachedModels) {
     logger.error('Car makes or models not found in cache.');
   }
 
-  const parsedMakes = cachedMakes ? JSON.parse(cachedMakes) as string[] : [];
-  const parsedModels = cachedModels ? JSON.parse(cachedModels) as string[] : [];
+  const parsedMakes = cachedMakes ? (JSON.parse(cachedMakes) as string[]) : [];
+  const parsedModels = cachedModels
+    ? (JSON.parse(cachedModels) as string[])
+    : [];
 
   if (make && !parsedMakes?.includes(make.toLowerCase())) {
     throw new BadRequestException(`Invalid car make: ${make}`);
@@ -35,10 +40,10 @@ export const validateMakeAndModel = async (
   if (normalize) {
     return {
       ...(make ? { normalizedMake: normalizeString(make) } : undefined),
-      ...(model ? { normalizedModel: normalizeString(model) } : undefined)
+      ...(model ? { normalizedModel: normalizeString(model) } : undefined),
     };
   }
-}
+};
 
 function normalizeString(value: string): string {
   return value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
