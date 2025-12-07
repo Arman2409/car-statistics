@@ -7,7 +7,6 @@ import { RedisService } from '@/modules/redis/redis.service';
 import { validateMakeAndModel } from '@/modules/cars/services/utils/validate-make-model';
 import { PromiseStatus } from '@/shared/constants/PromiseStatus';
 import { CacheKeys } from '@/modules/cars/constants/cache';
-import type { IngestionCarDto } from '@/modules/cars/dto/ingestion-car.dto';
 import type { BulkCreateResponse, BulkCreationError } from '@/modules/cars/types/BulkCreateResponse';
 import type { Repository } from 'typeorm';
 
@@ -25,7 +24,7 @@ export class BulkCreateProcessor {
   ) { }
 
   @Process(BULK_CREATION_OPERATION)
-  async handleBulkCreate(job: Job<IngestionCarDto[]>): Promise<BulkCreateResponse> {
+  async handleBulkCreate(job: Job<Partial<Car>[]>): Promise<BulkCreateResponse> {
     try {
       this.logger.log(`Processing bulk create job ${job.id} with ${job.data.length} cars`);
       const result = await this.processBulkCreate(job.data);
@@ -42,7 +41,7 @@ export class BulkCreateProcessor {
     }
   }
 
-  private async processBulkCreate(cars: IngestionCarDto[]): Promise<BulkCreateResponse> {
+  private async processBulkCreate(cars: Partial<Car>[]): Promise<BulkCreateResponse> {
     this.logger.log(`Starting bulk create for ${cars.length} cars`);
 
     // Validate all cars in parallel

@@ -7,17 +7,17 @@ import { RedisService } from '@/modules/redis/redis.service';
 import { getAveragePricePerModelQuery } from './utils/get-average-price-per-model-query';
 import { validateMakeAndModel } from '@/modules/cars/services/utils/validate-make-model';
 import { calculatePercentageFromGroupedResult, getGroupedCountQuery } from '@/modules/cars/services/utils/get-grouped-count-query';
-import { PromiseStatus } from '@/shared/constants/PromiseStatus';
 import { SortOrder } from '@/shared/constants/SortOrder';
 import { ALL_CARS_TTL_SECONDS, CacheKeys } from '@/modules/cars/constants/cache';
 import { RESPONSE_LIMITS } from '@/modules/cars/constants/limits';
 import { BULK_CREATE_QUEUE, BULK_CREATION_OPERATION } from '@/modules/cars/processors/bulk-create.processor';
+import { BULK_SETTINGS } from '@/modules/cars/constants/limits';
+import { BULK_JOB_OPTIONS } from '@/modules/cars/constants/queue';
 import type { Repository } from 'typeorm';
 import type { CreateCarDto } from '@/modules/cars/dto/create-car.dto';
 import type { UpdateCarDto } from '@/modules/cars/dto/update-car.dto';
 import type { GetPercentageResponse } from '@/modules/cars/types/GetPercentageResponse';
 import type { GetAveragePricePerModelResponse } from '@/modules/cars/types/GetAveragePricePerModelResponse';
-import type { IngestionCarDto } from '@/modules/cars/dto/ingestion-car.dto';
 
 @Injectable()
 export class CarsService {  
@@ -48,12 +48,22 @@ export class CarsService {
   }
 
 
-  async bulkCreate(cars: IngestionCarDto[]): Promise<void> {
+  async bulkCreate(cars: Partial<Car>[]): Promise<void> {
     this.logger.log(`Enqueuing bulk create job for ${cars.length} cars`);
-    await this.bulkCreateQueue.add(BULK_CREATION_OPERATION, cars, {
-      attempts: 3,
-      backoff: { type: 'exponential', delay: 2000 },
-    });
+
+    const jobChunkSize = BULK_SETTINGS.JOB_CHUNK_SIZE;
+
+    // If payload is small enough, enqueue as a single job
+    if (cars.length <= jobChunkSize) {
+      await this.bulkCreateQueue.add(BULK_CREATION_OPERATION, cars, BULK_JOB_OPTIONS);
+      return;
+    }
+
+    // For larger payloads, split into chunks and enqueue each chunk separately
+    for (let i = 0; i < cars.length; i += jobChunkSize) {
+      const chunk = cars.slice(i, i + jobChunkSize);
+      await this.bulkCreateQueue.add(BULK_CREATION_OPERATION, chunk, BULK_JOB_OPTIONS);
+    }
   }
 
   async findAll(): Promise<Car[]> {
@@ -176,11 +186,6 @@ export class CarsService {
       percentage: row.percentage,
     }));
 
-    // TODO: Here and other places should be done earlier the cutting
     return mappedResults.slice(0, RESPONSE_LIMITS.MODEL_PERCENTAGE);
-  }
-
-  private async invalidateAllCarsCache(): Promise<void> {
-    await this.redisService.invalidateKey(CacheKeys.ALL_CARS);
   }
 }

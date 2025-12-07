@@ -9,6 +9,7 @@ import { RedisService } from '@/modules/redis/redis.service';
 import { CacheKeys } from '@/modules/cars/constants/cache';
 import { FALLBACK_MAKES, FALLBACK_MODELS, PREDEFINED_CAR_MAKES, PREDEFINED_CAR_MODELS } from '@/modules/cars/constants/car-data';
 import { ConfigService } from '@nestjs/config';
+import type { MakeAndModelData } from '@/modules/cars/types/MakeAndModelData';
 
 @Injectable()
 export class MakeAndModelSeederService implements OnModuleInit {
@@ -58,17 +59,15 @@ export class MakeAndModelSeederService implements OnModuleInit {
       // Use firstValueFrom to handle the Observable returned by HttpService
      
       const response = await firstValueFrom(
-        this.httpService.get<{make: string, model: string}[]>(this.apiaryApiUrl) 
+        this.httpService.get<MakeAndModelData[]>(this.apiaryApiUrl) 
       );
 
-      if(!response.data.length) {
+      if(!response.data?.length) {
         this.logger.warn("Received wrong data from API for makes and models validation");
         useFallbackData();
         return;
       };
 
-      // TODO: Check the importance of firstValueFrom
-      
       // Map the response data to an array of strings and normalize (important!)
        response.data
         .forEach(item => {
@@ -95,6 +94,7 @@ export class MakeAndModelSeederService implements OnModuleInit {
     // The caching step that makes the app self-sufficient after the first run
     await this.redisService.getClient().set(CacheKeys.MAKES, JSON.stringify(makesToCache), 'EX', 86400);
     await this.redisService.getClient().set(CacheKeys.MODELS, JSON.stringify(modelToCache), 'EX', 86400);
+
     this.logger.log(`Car makes and models list successfully stored in Redis.`);
   }
 }

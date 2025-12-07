@@ -24,9 +24,10 @@ import { CarsService } from '@/modules/cars/services/cars.service';
 import { CreateCarDto } from '@/modules/cars/dto/create-car.dto';
 import { UpdateCarDto } from '@/modules/cars/dto/update-car.dto';
 import { JwtAuthGuard } from '@/modules/cars/guards/jwt-auth.guard';
-import { Car } from '@/modules/cars/entities/car.entity';
 import { ApiKeyAuthGuard } from '@/modules/cars/guards/api-key-auth.guard';
-import type { IngestionCarDto } from '@/modules/cars/dto/ingestion-car.dto';
+import { PayloadTooLargeException } from '@nestjs/common';
+import { BULK_SETTINGS } from '@/modules/cars/constants/limits';
+import type { Car } from '@/modules/cars/entities/car.entity';
 
 const swagger = createCarsSwaggerConfig();
 
@@ -44,7 +45,12 @@ export class CarsController {
   @ApiResponse(swagger.responses.bulkCreate)
   @ApiResponse(swagger.errors.validationError)
   @ApiResponse(swagger.errors.unauthorized)
-  async bulkCreate(@Body() cars: IngestionCarDto[]): Promise<void> {
+  async bulkCreate(@Body() cars: Partial<Car>[]): Promise<void> {
+    // Protect from overly large single requests at the controller level
+    if (cars.length > BULK_SETTINGS.MAX_REQUEST_ITEMS) {
+      throw new PayloadTooLargeException(`Bulk request exceeds maximum of ${BULK_SETTINGS.MAX_REQUEST_ITEMS} items`);
+    }
+
     return this.carsService.bulkCreate(cars);
   }
 

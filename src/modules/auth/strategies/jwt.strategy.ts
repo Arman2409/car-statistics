@@ -15,17 +15,21 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
       secretOrKey:
-        configService.get<string>('jwt.secret') ||
-        'your-secret-key-change-in-production',
+        configService.get<string>('jwt.secret'),
     });
   }
 
-  // TODO: Something is wrong here, needs checking
   async validate(payload: ValidateArgs) {
     const user = await this.usersService.findByUsername(payload.username);
     if (!user) {
       throw new UnauthorizedException();
     }
-    return { userId: payload.sub, username: payload.username };
+
+    const response = {
+      username: user.username,
+      sub: user.id, 
+    };
+
+    return response;
   }
 }

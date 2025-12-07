@@ -5,9 +5,10 @@ import { CreateCarDto } from '@/modules/cars/dto/create-car.dto';
 import { ApiKeyAuthGuard } from '@/modules/cars/guards/api-key-auth.guard';
 import { JwtAuthGuard } from '@/modules/cars/guards/jwt-auth.guard';
 import { ConfigService } from '@nestjs/config';
-import type { IngestionCarDto } from '@/modules/cars/dto/ingestion-car.dto';
-import type { UpdateCarDto } from '@/modules/cars/dto/update-car.dto';
 import { mockCar, createMockCarsService, createMockGuards, createMockConfigService } from '@/modules/cars/__mocks__/cars.mocks';
+import { BULK_SETTINGS } from '@/modules/cars/constants/limits';
+import type { Car } from '@/modules/cars/entities/car.entity';
+import type { UpdateCarDto } from '@/modules/cars/dto/update-car.dto';
 
 describe('CarsController', () => {
   let controller: CarsController;
@@ -50,10 +51,17 @@ describe('CarsController', () => {
   });
 
   it('bulkCreate() should call service', async () => {
-    const payload = [{ normalizedMake: 'toyota' } as IngestionCarDto];
+    const payload = [{ normalizedMake: 'toyota' } as Partial<Car>];
 
     await controller.bulkCreate(payload);
     expect(mockService.bulkCreate).toHaveBeenCalledWith(payload);
+  });
+
+  it('bulkCreate() should return 413 when request too large', async () => {
+    const max = BULK_SETTINGS.MAX_REQUEST_ITEMS;
+    const payload = Array.from({ length: max + 1 }).map(() => ({ normalizedMake: 'x' } as Partial<Car>));
+
+    await expect(controller.bulkCreate(payload)).rejects.toThrow();
   });
 
   it('create() should create a car', async () => {
