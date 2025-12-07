@@ -2,12 +2,15 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from '@/app.module';
 import { UsersService } from '@/modules/users/users.service';
 
+const DEFAULT_USERNAME = 'admin';
+const DEFAULT_PASSWORD = 'admin123';
+
 async function seedUser() {
   const app = await NestFactory.createApplicationContext(AppModule);
   const usersService = app.get(UsersService);
 
-  const username = process.argv[2] || 'admin';
-  const password = process.argv[3] || 'admin123';
+  const username = process.argv[2] || DEFAULT_USERNAME;
+  const password = process.argv[3] || DEFAULT_PASSWORD;
 
   try {
     const existingUser = await usersService.findByUsername(username);

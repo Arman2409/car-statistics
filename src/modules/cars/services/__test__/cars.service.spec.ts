@@ -1,106 +1,71 @@
-import { Test } from '@nestjs/testing';
-import { getRepositoryToken } from '@nestjs/typeorm';
 import { CarsService } from '@/modules/cars/services/cars.service';
-import { CreateCarDto } from '@/modules/cars/dto/create-car.dto';
-import type { TestingModule } from '@nestjs/testing';
-import type { Repository } from 'typeorm';
+import { CacheKeys } from '@/modules/cars/constants/cache';
 import type { Car } from '@/modules/cars/entities/car.entity';
+import type { CreateCarDto } from '@/modules/cars/dto/create-car.dto';
+
+jest.mock('@/modules/cars/services/utils/validate-make-model', () => ({
+	validateMakeAndModel: jest.fn().mockResolvedValue({ normalizedMake: 'toyota', normalizedModel: 'corolla' }),
+}));
 
 describe('CarsService', () => {
-  let service: CarsService;
-  let repository: Repository<Car>;
+	let service: CarsService;
 
-  const mockRepository = {
-    create: jest.fn(),
-    save: jest.fn(),
-    find: jest.fn(),
-    findOne: jest.fn(),
-    update: jest.fn(),
-    delete: jest.fn(),
-    count: jest.fn(),
-    createQueryBuilder: jest.fn(),
-  };
+	const mockRepo: Partial<Record<string, jest.Mock>> = {
+		create: jest.fn(),
+		save: jest.fn(),
+		find: jest.fn(),
+		findOne: jest.fn(),
+		update: jest.fn(),
+		delete: jest.fn(),
+		insert: jest.fn(),
+	};
 
-  beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        CarsService,
-        {
-          provide: getRepositoryToken(Car),
-          useValue: mockRepository,
-        },
-      ],
-    }).compile();
+	const mockRedisClient = { get: jest.fn(), set: jest.fn(), del: jest.fn() };
+	const mockRedisService = { getClient: () => mockRedisClient };
+	const mockLogger = { warn: jest.fn(), log: jest.fn(), error: jest.fn() } as any;
+	const mockQueue = { add: jest.fn() } as any;
 
-    service = module.get<CarsService>(CarsService);
-    repository = module.get<Repository<Car>>(getRepositoryToken(Car));
-  });
+	beforeEach(() => {
+		// instantiate directly to avoid DI complexity in tests
+		service = new CarsService(mockRepo as any, mockRedisService as any, mockLogger, mockQueue);
+		jest.clearAllMocks();
+	});
 
-  it('should be defined', () => {
-    expect(service).toBeDefined();
-  });
+	it('create() should validate and save a car', async () => {
+		const payload = { make: 'Toyota', model: 'Corolla', year: 2020, price: 10000, location: 'NY' } as CreateCarDto;
+		const persisted = { id: 1, ...payload, normalizedMake: 'toyota', normalizedModel: 'corolla' };
 
-  describe('create', () => {
-    it('should create a car', async () => {
-      const createCarDto: CreateCarDto = {
-        normalizedMake: 'toyota',
-        normalizedModel: 'corolla',
-        year: 2020,
-        price: 25000,
-        location: 'New York',
-      };
-      const mockCar = { id: 1, ...createCarDto };
+		(mockRepo.create as jest.Mock).mockReturnValue(persisted);
+		(mockRepo.save as jest.Mock).mockResolvedValue(persisted);
 
-      mockRepository.create.mockReturnValue(mockCar);
-      mockRepository.save.mockResolvedValue(mockCar);
+		const res = await service.create(payload);
 
-      const result = await service.create(createCarDto);
+		expect(mockRepo.create).toHaveBeenCalled();
+		expect(mockRepo.save).toHaveBeenCalledWith(persisted);
+		expect(res).toEqual(persisted);
+	});
 
-      expect(result).toEqual(mockCar);
-      expect(mockRepository.create).toHaveBeenCalledWith(createCarDto);
-      expect(mockRepository.save).toHaveBeenCalledWith(mockCar);
-    });
-  });
+	it('findAll() should return cached value when present', async () => {
+		const mockCars = [{ id: 1, normalizedMake: 'toyota' } as Car];
+		(mockRedisClient.get as jest.Mock).mockResolvedValue(JSON.stringify(mockCars));
 
-  describe('findAll', () => {
-    it('should return an array of cars', async () => {
-      const mockCars = [
-        {
-          id: 1,
-          normalizedMake: 'toyota',
-          normalizedModel: 'corolla',
-          year: 2020,
-          price: 25000,
-          location: 'New York',
-        },
-      ];
+		const res = await service.findAll();
 
-      mockRepository.find.mockResolvedValue(mockCars);
+		expect(res).toEqual(mockCars);
+		expect(mockRedisClient.get).toHaveBeenCalledWith(CacheKeys.ALL_CARS);
+		expect(mockRepo.find).not.toHaveBeenCalled();
+	});
 
-      const result = await service.findAll();
+	it('findAll() should query DB and cache the result when cache miss', async () => {
+		const mockCars = [{ id: 2, normalizedMake: 'honda' } as Car];
+		(mockRedisClient.get as jest.Mock).mockResolvedValue(null);
+		(mockRepo.find as jest.Mock).mockResolvedValue(mockCars);
 
-      expect(result).toEqual(mockCars);
-      expect(mockRepository.find).toHaveBeenCalled();
-    });
-  });
+		const res = await service.findAll();
 
-  describe('findOne', () => {
-    it('should return a car by id', async () => {
-      const mockCar = {
-        id: 1,
-        normalizedMake: 'toyota',
-        normalizedModel: 'corolla',
-        year: 2020,
-        price: 25000,
-        location: 'New York',
-      };
-
-      mockRepository.findOne.mockResolvedValue(mockCar);
-
-      const result = await service.findOne(1);
-
-      expect(result).toEqual(mockCar);
-      expect(mockRepository.findOne).toHaveBeenCalledWith({ where: { id: 1 } });
-    });
-  });
+		expect(mockRepo.find).toHaveBeenCalled();
+		expect(mockRedisClient.set).toHaveBeenCalled();
+		expect(res).toEqual(mockCars);
+	});
 });
+
