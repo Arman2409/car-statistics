@@ -120,6 +120,8 @@ Swagger documentation will be available at `http://localhost:3000/api/docs`
 - `GET /cars/stats/make-percentage` - Percentage distribution per make
 - `GET /cars/stats/model-percentage` - Percentage distribution per model
 
+**API testing**  You can use Postman collection in the root folder for testing the API.
+
 ## Authentication
 
 All `/cars` routes are protected with JWT authentication (except for /create/bulk). To access them:
