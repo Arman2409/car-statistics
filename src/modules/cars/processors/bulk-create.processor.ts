@@ -89,11 +89,12 @@ export class BulkCreateProcessor {
       errors,
     };
 
-    this.logger.log("Finished bulk create operation", {
+    this.logger.log(`Finished bulk create operation, ${JSON.stringify({
       created: carsToInsert.length,
       failed: errors.length,
       errors,
-    });
+    })}`
+    );
 
     return operationResult;
   }
