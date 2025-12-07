@@ -7,7 +7,7 @@ import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 import { RedisService } from '@/modules/redis/redis.service';
 import { CacheKeys } from '@/modules/cars/constants/cache';
-import { FALLBACK_MAKES, FALLBACK_MODELS } from '@/modules/cars/constants/car-data';
+import { FALLBACK_MAKES, FALLBACK_MODELS, PREDEFINED_CAR_MAKES, PREDEFINED_CAR_MODELS } from '@/modules/cars/constants/car-data';
 import { ConfigService } from '@nestjs/config';
 
 @Injectable()
@@ -43,8 +43,8 @@ export class MakeAndModelSeederService implements OnModuleInit {
     let modelToCache: string[] = [];
 
     const useFallbackData = () => {
-      makesToCache = FALLBACK_MAKES;
-      modelToCache = FALLBACK_MODELS;
+      makesToCache = [...FALLBACK_MAKES, ...PREDEFINED_CAR_MAKES];
+      modelToCache = [...FALLBACK_MODELS, ...PREDEFINED_CAR_MODELS];
     }
 
      if(this.apiaryApiUrl === undefined) {
@@ -67,7 +67,7 @@ export class MakeAndModelSeederService implements OnModuleInit {
         return;
       };
 
-      // TODO: Check the response and the importance of firstValueFrom
+      // TODO: Check the importance of firstValueFrom
       
       // Map the response data to an array of strings and normalize (important!)
        response.data
@@ -77,10 +77,10 @@ export class MakeAndModelSeederService implements OnModuleInit {
         });
 
       const uniqueMakes = new Set(makesToCache.map(make => make.toLowerCase()));
-      makesToCache = Array.from(uniqueMakes);
+      makesToCache = Array.from(uniqueMakes).concat(PREDEFINED_CAR_MAKES);
 
       const uniqueModels = new Set(modelToCache.map(model => model.toLowerCase()));
-      modelToCache = Array.from(uniqueModels);
+      modelToCache = Array.from(uniqueModels).concat(PREDEFINED_CAR_MODELS);
 
       this.logger.log(`Successfully fetched car makes and models from external API.`);
 
@@ -93,8 +93,8 @@ export class MakeAndModelSeederService implements OnModuleInit {
     }
 
     // The caching step that makes the app self-sufficient after the first run
-    await this.redisService.getClient().set(CacheKeys.MAKES, JSON.stringify(makesToCache));
-    await this.redisService.getClient().set(CacheKeys.MODELS, JSON.stringify(modelToCache));
+    await this.redisService.getClient().set(CacheKeys.MAKES, JSON.stringify(makesToCache), 'EX', 86400);
+    await this.redisService.getClient().set(CacheKeys.MODELS, JSON.stringify(modelToCache), 'EX', 86400);
     this.logger.log(`Car makes and models list successfully stored in Redis.`);
   }
 }

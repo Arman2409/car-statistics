@@ -13,14 +13,12 @@ import { BULK_CREATE_QUEUE, BulkCreateProcessor } from '@/modules/cars/processor
     TypeOrmModule.forFeature([Car]),
     HttpModule.register({}),
     BullModule.registerQueue({
-      name: BULK_CREATE_QUEUE,
+      name: BULK_CREATE_QUEUE
     }),
   ],
   controllers: [CarsController],
-  providers: [CarsService, MakeAndModelSeederService, Logger, BulkCreateProcessor],
+  providers: [CarsService, MakeAndModelSeederService, BulkCreateProcessor, Logger],
 })
 export class CarsModule {}
-
-
 
 

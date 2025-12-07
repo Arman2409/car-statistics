@@ -10,9 +10,8 @@ import { calculatePercentageFromGroupedResult, getGroupedCountQuery } from '@/mo
 import { PromiseStatus } from '@/shared/constants/PromiseStatus';
 import { SortOrder } from '@/shared/constants/SortOrder';
 import { ALL_CARS_TTL_SECONDS, CacheKeys } from '@/modules/cars/constants/cache';
-import { ResponseLimits } from '@/modules/cars/constants/limits';
-import { BULK_CREATE_QUEUE } from '@/modules/cars/processors/bulk-create.processor';
-import type { BulkCreateResponse, BulkCreationError } from '@/modules/cars/types/BulkCreateResponse';
+import { RESPONSE_LIMITS } from '@/modules/cars/constants/limits';
+import { BULK_CREATE_QUEUE, BULK_CREATION_OPERATION } from '@/modules/cars/processors/bulk-create.processor';
 import type { Repository } from 'typeorm';
 import type { CreateCarDto } from '@/modules/cars/dto/create-car.dto';
 import type { UpdateCarDto } from '@/modules/cars/dto/update-car.dto';
@@ -51,64 +50,10 @@ export class CarsService {
 
   async bulkCreate(cars: IngestionCarDto[]): Promise<void> {
     this.logger.log(`Enqueuing bulk create job for ${cars.length} cars`);
-    await this.bulkCreateQueue.add('process-bulk', cars, {
+    await this.bulkCreateQueue.add(BULK_CREATION_OPERATION, cars, {
       attempts: 3,
       backoff: { type: 'exponential', delay: 2000 },
     });
-  }
-
-  async processBulkCreate(cars: IngestionCarDto[]): Promise<BulkCreateResponse> {
-    this.logger.log(`Starting bulk create for ${cars.length} cars`);
-
-    // Validate all cars in parallel
-    const validationResults = await Promise.allSettled(
-      cars.map((car) => validateMakeAndModel({
-          redisService: this.redisService,
-          logger: this.logger,
-          make: car.normalizedMake,
-          model: car.normalizedModel,
-          normalize: false,
-        })
-      )
-    );
-
-    const carsToInsert: Partial<Car>[] = [];
-    const errors: BulkCreationError[] = [];
-
-    validationResults.forEach((result, i) => {
-      if (result.status === PromiseStatus.FULFILLED) {
-        carsToInsert.push(cars[i]);
-      } else {
-        errors.push({
-          index: i,
-          message: (result.reason as Error).message,
-        });
-      }
-    });
-
-    if (carsToInsert.length > 0) {
-      const batchSize = 1000;
-
-      for (let i = 0; i < carsToInsert.length; i += batchSize) {
-        const batch = carsToInsert.slice(i, i + batchSize);
-        await this.carsRepository.insert(batch);
-      }
-    }
-
-    // Invalidate cached all-cars list after bulk insert
-    await this.invalidateAllCarsCache();
-
-    this.logger.log({
-      created: carsToInsert.length,
-      failed: errors.length,
-      errors,
-    });
-
-    return {
-      created: carsToInsert.length,
-      failed: errors.length,
-      errors,
-    };
   }
 
   async findAll(): Promise<Car[]> {
@@ -128,7 +73,7 @@ export class CarsService {
     const cars = await this.carsRepository.find({
       order: { createdAt: SortOrder.DESC },
       select: CAR_PUBLIC_FIELDS,
-      take: ResponseLimits.ALL_CARS,
+      take: RESPONSE_LIMITS.ALL_CARS,
     });
 
     if (client) {
@@ -201,7 +146,7 @@ export class CarsService {
       averagePrice: Math.round(parseFloat(row.averagePrice)),
     }));
 
-    return mappedRows.slice(0, ResponseLimits.AVERAGE_PRICE_PER_MODEL);
+    return mappedRows.slice(0, RESPONSE_LIMITS.AVERAGE_PRICE_PER_MODEL);
   }
 
   async getMakePercentage(): Promise<GetPercentageResponse> {
@@ -216,7 +161,7 @@ export class CarsService {
       percentage: row.percentage,
     }));
 
-    return mappedResults.slice(0, ResponseLimits.MAKE_PERCENTAGE);
+    return mappedResults.slice(0, RESPONSE_LIMITS.MAKE_PERCENTAGE);
   }
 
   async getModelPercentage(): Promise<GetPercentageResponse> {
@@ -231,15 +176,11 @@ export class CarsService {
       percentage: row.percentage,
     }));
 
-    return mappedResults.slice(0, ResponseLimits.MODEL_PERCENTAGE);
+    // TODO: Here and other places should be done earlier the cutting
+    return mappedResults.slice(0, RESPONSE_LIMITS.MODEL_PERCENTAGE);
   }
 
   private async invalidateAllCarsCache(): Promise<void> {
-    try {
-      if (this.redisService) await this.redisService.getClient().del(CacheKeys.ALL_CARS);
-    } catch (err) {
-      this.logger?.warn('Failed to invalidate cars cache');
-    }
+    await this.redisService.invalidateKey(CacheKeys.ALL_CARS);
   }
 }
-

@@ -5,4 +5,4 @@ import redisConfig from '@/config/redis.config';
 
 const configs = [databaseConfig, externalConfig, jwtConfig, redisConfig];
 
-export default configs;
+export {configs};

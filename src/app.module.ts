@@ -11,7 +11,7 @@ import { CarsModule } from '@/modules/cars/cars.module';
 import { THROTTLE_SETTINGS } from '@/modules/cars/constants/throttle';
 import { User } from '@/modules/users/entities/user.entity';
 import { Car } from '@/modules/cars/entities/car.entity';
-import configs from '@/config';
+import { configs } from '@/config';
 import { RedisModule } from '@/modules/redis/redis.module';
 
 @Module({

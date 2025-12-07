@@ -14,19 +14,21 @@ export const validateMakeAndModel = async (
   }: ValidateMakeAndModelArgs): Promise<ValidateMakeAndModelResult|void> => {
   if (!isUpdate && (!make || !model)) throw new BadRequestException('Make and model are required');
 
-  const cachedMakes = await redisService.getClient().get(CacheKeys.MAKES);
-  const cachedModels = await redisService.getClient().get(CacheKeys.MODELS);
+  let cachedMakes = await redisService.getClient().get(CacheKeys.MAKES);
+  let cachedModels = await redisService.getClient().get(CacheKeys.MODELS);
 
   if (!cachedMakes || !cachedModels) {
-    logger.warn('Car makes/models not found in cache.');
+    logger.error('Car makes or models not found in cache.');
   }
 
-  if (make && !cachedMakes?.includes(make.toLowerCase())) {
-    console.log("here");
+  const parsedMakes = cachedMakes ? JSON.parse(cachedMakes) as string[] : [];
+  const parsedModels = cachedModels ? JSON.parse(cachedModels) as string[] : [];
+
+  if (make && !parsedMakes?.includes(make.toLowerCase())) {
     throw new BadRequestException(`Invalid car make: ${make}`);
   }
 
-  if (model && !cachedModels?.includes(model.toLowerCase())) {
+  if (model && !parsedModels?.includes(model.toLowerCase())) {
     throw new BadRequestException(`Invalid car model: ${model}`);
   }
 

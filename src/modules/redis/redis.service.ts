@@ -33,6 +33,19 @@ export class RedisService implements OnModuleDestroy {
     return this.client;
   }
 
+  /**
+   * Invalidate a single cache key
+   * Handles errors gracefully without throwing
+   */
+  async invalidateKey(key: string): Promise<void> {
+    try {
+      await this.client.del(key);
+      this.logger.log(`Cache key invalidated: ${key}`);
+    } catch (err) {
+      this.logger.warn(`Failed to invalidate cache key: ${key}`, err instanceof Error ? err.message : String(err));
+    }
+  }
+
   async onModuleDestroy() {
     await this.client.quit();
   }
