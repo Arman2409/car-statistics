@@ -10,7 +10,7 @@ import {
   calculatePercentageFromGroupedResult,
   getGroupedCountQuery,
 } from '@/modules/cars/services/utils/get-grouped-count-query';
-import { SortOrder } from '@/shared/constants/SortOrder';
+import { SortOrder } from '@/shared/constants/enums/SortOrder';
 import {
   ALL_CARS_TTL_SECONDS,
   CacheKeys,
@@ -25,6 +25,7 @@ import { BULK_JOB_OPTIONS } from '@/modules/cars/constants/queue';
 import type { Repository } from 'typeorm';
 import type { CreateCarDto } from '@/modules/cars/dto/create-car.dto';
 import type { UpdateCarDto } from '@/modules/cars/dto/update-car.dto';
+import type { BulkCreateCarItemDto } from '@/modules/cars/dto/bulk-create-car.dto';
 import type { GetPercentageResponse } from '@/modules/cars/types/GetPercentageResponse';
 import type {
   AveragePriceItem,
@@ -60,7 +61,7 @@ export class CarsService {
     return this.carsRepository.save(car);
   }
 
-  async bulkCreate(cars: Partial<Car>[]): Promise<void> {
+  async bulkCreate(cars: BulkCreateCarItemDto[]): Promise<void> {
     this.logger.log(`Enqueuing bulk create job for ${cars.length} cars`);
 
     const jobChunkSize = BULK_SETTINGS.JOB_CHUNK_SIZE;

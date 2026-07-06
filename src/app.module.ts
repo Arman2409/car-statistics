@@ -12,6 +12,7 @@ import { THROTTLE_SETTINGS } from '@/modules/cars/constants/throttle';
 import { User } from '@/modules/users/entities/user.entity';
 import { Car } from '@/modules/cars/entities/car.entity';
 import { configs } from '@/config';
+import { envValidationSchema } from '@/config/env.validation';
 import { RedisModule } from '@/modules/redis/redis.module';
 
 @Module({
@@ -26,6 +27,8 @@ import { RedisModule } from '@/modules/redis/redis.module';
     ConfigModule.forRoot({
       isGlobal: true,
       load: configs,
+      validationSchema: envValidationSchema,
+      validationOptions: { abortEarly: false },
     }),
     BullModule.forRootAsync({
       imports: [ConfigModule],
@@ -47,6 +50,7 @@ import { RedisModule } from '@/modules/redis/redis.module';
         password: configService.get<string>('database.password'),
         database: configService.get<string>('database.database'),
         entities: [User, Car],
+        synchronize: configService.get<string>('app.nodeEnv') === 'development',
         logging: false,
       }),
       inject: [ConfigService],

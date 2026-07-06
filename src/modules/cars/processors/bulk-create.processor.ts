@@ -5,12 +5,13 @@ import { Job } from 'bullmq';
 import { Car } from '@/modules/cars/entities/car.entity';
 import { RedisService } from '@/modules/redis/redis.service';
 import { validateMakeAndModel } from '@/modules/cars/services/utils/validate-make-model';
-import { PromiseStatus } from '@/shared/constants/PromiseStatus';
+import { PromiseStatus } from '@/shared/constants/enums/PromiseStatus';
 import { CacheKeys } from '@/modules/cars/constants/cache';
 import type {
   BulkCreateResponse,
   BulkCreationError,
 } from '@/modules/cars/types/BulkCreateResponse';
+import type { BulkCreateCarItemDto } from '@/modules/cars/dto/bulk-create-car.dto';
 import type { Repository } from 'typeorm';
 
 export const BULK_CREATE_QUEUE = 'bulk-create';
@@ -28,7 +29,7 @@ export class BulkCreateProcessor {
 
   @Process(BULK_CREATION_OPERATION)
   async handleBulkCreate(
-    job: Job<Partial<Car>[]>,
+    job: Job<BulkCreateCarItemDto[]>,
   ): Promise<BulkCreateResponse> {
     try {
       this.logger.log(
@@ -49,7 +50,7 @@ export class BulkCreateProcessor {
   }
 
   private async processBulkCreate(
-    cars: Partial<Car>[],
+    cars: BulkCreateCarItemDto[],
   ): Promise<BulkCreateResponse> {
     this.logger.log(`Starting bulk create for ${cars.length} cars`);
 

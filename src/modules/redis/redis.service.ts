@@ -1,21 +1,19 @@
 // src/redis/redis.service.ts
 import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
 
 @Injectable()
 export class RedisService implements OnModuleDestroy {
   private readonly client: Redis;
-  private connected: boolean = false;
 
-  constructor(private readonly logger: Logger) {
-    if (this.client) {
-      this.logger.warn('🔌 Redis client already initialized');
-    }
-
+  constructor(
+    private readonly logger: Logger,
+    private readonly configService: ConfigService,
+  ) {
     this.client = new Redis({
-      host: process.env.CACHE_HOST || 'localhost',
-      port: Number(process.env.CACHE_PORT) || 6379,
-      db: Number(process.env.CACHE_DB) || 0,
+      host: this.configService.get<string>('redis.redis_host'),
+      port: this.configService.get<number>('redis.redis_port'),
     });
 
     this.client.on('connect', () => {

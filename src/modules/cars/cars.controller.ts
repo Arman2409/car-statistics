@@ -8,8 +8,10 @@ import {
   Delete,
   UseGuards,
   ParseIntPipe,
+  ParseArrayPipe,
   HttpCode,
   HttpStatus,
+  PayloadTooLargeException,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import {
@@ -27,9 +29,9 @@ import { THROTTLE_SETTINGS } from '@/modules/cars/constants/throttle';
 import { CarsService } from '@/modules/cars/services/cars.service';
 import { CreateCarDto } from '@/modules/cars/dto/create-car.dto';
 import { UpdateCarDto } from '@/modules/cars/dto/update-car.dto';
+import { BulkCreateCarItemDto } from '@/modules/cars/dto/bulk-create-car.dto';
 import { JwtAuthGuard } from '@/modules/cars/guards/jwt-auth.guard';
 import { ApiKeyAuthGuard } from '@/modules/cars/guards/api-key-auth.guard';
-import { PayloadTooLargeException } from '@nestjs/common';
 import { BULK_SETTINGS } from '@/modules/cars/constants/limits';
 import type { Car } from '@/modules/cars/entities/car.entity';
 
@@ -50,7 +52,16 @@ export class CarsController {
   @ApiResponse(swagger.errors.validationError)
   @ApiResponse(swagger.errors.unauthorized)
   @ApiBody(swagger.bodies.bulkCreate)
-  async bulkCreate(@Body() cars: Partial<Car>[]): Promise<void> {
+  async bulkCreate(
+    @Body(
+      new ParseArrayPipe({
+        items: BulkCreateCarItemDto,
+        whitelist: true,
+        forbidNonWhitelisted: true,
+      }),
+    )
+    cars: BulkCreateCarItemDto[],
+  ): Promise<void> {
     // Protect from overly large single requests at the controller level
     if (cars.length > BULK_SETTINGS.MAX_REQUEST_ITEMS) {
       throw new PayloadTooLargeException(
@@ -58,7 +69,7 @@ export class CarsController {
       );
     }
 
-    this.carsService.bulkCreate(cars);
+    await this.carsService.bulkCreate(cars);
   }
 
   @UseGuards(JwtAuthGuard)
