@@ -1,8 +1,8 @@
+import 'dotenv/config';
 import { DataSource, DataSourceOptions } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { User } from '@/modules/users/entities/user.entity';
 import databaseConfig from '@/config/database.config';
-import { ConfigModule } from '@nestjs/config';
 import { BCRYPT_SALT_ROUNDS } from '@/shared/constants/settings';
 import { createQuestion } from '@/scripts/utils/create-question';
 
@@ -10,20 +10,10 @@ const DEFAULT_USERNAME = 'admin';
 const DEFAULT_PASSWORD = 'admin123';
 
 async function seedUser() {
-  // Extract config service from ConfigModule
-  const configModule = ConfigModule.forRoot({
-    load: [databaseConfig],
+  const dataSource = new DataSource({
+    ...(databaseConfig() as DataSourceOptions),
+    entities: [User],
   });
-
-  const configProviders = (await configModule)?.providers;
-  const configService = (
-    configProviders as Array<{ useFactory: () => DataSourceOptions }>
-  )[0];
-
-  // Get database configuration
-  const databaseSetupConfig = configService.useFactory();
-
-  const dataSource = new DataSource(databaseSetupConfig);
 
   try {
     await dataSource.initialize();

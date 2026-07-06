@@ -1,4 +1,5 @@
 import type { Car } from '@/modules/cars/entities/car.entity';
+import type { BulkCreateCarItemDto } from '@/modules/cars/dto/bulk-create-car.dto';
 
 export const mockCar: Car = {
   id: 1,
@@ -10,6 +11,14 @@ export const mockCar: Car = {
   createdAt: new Date(),
   updatedAt: new Date(),
 } as Car;
+
+export const mockBulkCreateCarItem: BulkCreateCarItemDto = {
+  normalizedMake: 'toyota',
+  normalizedModel: 'corolla',
+  year: 2020,
+  price: 10000,
+  location: 'NY',
+};
 
 export const createMockCarsService = () => ({
   bulkCreate: jest.fn().mockResolvedValue(undefined),

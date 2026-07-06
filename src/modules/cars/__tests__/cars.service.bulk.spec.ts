@@ -1,7 +1,9 @@
 import { CarsService } from '@/modules/cars/services/cars.service';
 import { Logger } from '@nestjs/common';
 import { BULK_SETTINGS } from '@/modules/cars/constants/limits';
+import { mockBulkCreateCarItem } from '@/modules/cars/__mocks__/cars.mocks';
 import type { Car } from '@/modules/cars/entities/car.entity';
+import type { BulkCreateCarItemDto } from '@/modules/cars/dto/bulk-create-car.dto';
 import type { Repository } from 'typeorm';
 import type { RedisService } from '@/modules/redis/redis.service';
 import type { Queue } from 'bullmq';
@@ -21,9 +23,9 @@ describe('CarsService bulkCreate', () => {
       mockQueue as unknown as Queue,
     );
 
-    const payload: Partial<Car>[] = Array.from({
+    const payload: BulkCreateCarItemDto[] = Array.from({
       length: BULK_SETTINGS.JOB_CHUNK_SIZE,
-    }).map(() => ({ normalizedMake: 'x' }) as Partial<Car>);
+    }).map(() => mockBulkCreateCarItem);
 
     await service.bulkCreate(payload);
 
@@ -45,8 +47,8 @@ describe('CarsService bulkCreate', () => {
     );
 
     const total = BULK_SETTINGS.JOB_CHUNK_SIZE * 2 + 10;
-    const payload: Partial<Car>[] = Array.from({ length: total }).map(
-      () => ({ normalizedMake: 'x' }) as Partial<Car>,
+    const payload: BulkCreateCarItemDto[] = Array.from({ length: total }).map(
+      () => mockBulkCreateCarItem,
     );
 
     await service.bulkCreate(payload);
